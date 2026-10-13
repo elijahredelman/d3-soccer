@@ -1,0 +1,37 @@
+[project]
+name = "d3soccer"
+version = "0.1.0"
+description = "Collect and analyze NCAA Division III soccer data."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "beautifulsoup4>=4.12",
+    "httpx>=0.27",
+    "pandas>=2.2",
+]
+
+[project.scripts]
+d3soccer = "d3soccer.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/d3soccer"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]

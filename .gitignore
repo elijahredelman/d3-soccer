@@ -218,3 +218,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project data (scraped pages, processed outputs, local database)
+data/raw/*
+data/processed/*
+!data/**/.gitkeep
+data/*.db
