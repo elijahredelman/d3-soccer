@@ -19,7 +19,7 @@ import re
 import requests
 from bs4 import BeautifulSoup
 
-from models import Team, StandingRow
+from d3soccer.models import StandingRow, Team
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; D3SoccerAppBot/0.1; contact: elijahredelman@gmail.com)"
@@ -118,7 +118,9 @@ WIAC_TEAMS = [
 # Northwest Conference (NWC)
 # ---------------------------------------------------------------------
 NWC_TEAMS = [
-    Team(name="George Fox", conference="Northwest Conference", site_domain="athletics.georgefox.edu"),
+    Team(
+        name="George Fox", conference="Northwest Conference", site_domain="athletics.georgefox.edu"
+    ),
     Team(name="Lewis & Clark", conference="Northwest Conference", site_domain="golcathletics.com"),
     Team(name="Linfield", conference="Northwest Conference", site_domain="golinfieldwildcats.com"),
     Team(name="Pacific (OR)", conference="Northwest Conference", site_domain="goboxers.com"),
@@ -158,7 +160,12 @@ LIBERTY_LEAGUE_TEAMS = [
 # Centennial Conference
 # ---------------------------------------------------------------------
 CENTENNIAL_TEAMS = [
-    Team(name="Dickinson", conference="Centennial", site_domain="dickinsonathletics.com", sport_slug="msoc"),
+    Team(
+        name="Dickinson",
+        conference="Centennial",
+        site_domain="dickinsonathletics.com",
+        sport_slug="msoc",
+    ),
     Team(name="Franklin & Marshall", conference="Centennial", site_domain="godiplomats.com"),
     Team(name="Gettysburg", conference="Centennial", site_domain="gettysburgsports.com"),
     Team(name="Haverford", conference="Centennial", site_domain="haverfordathletics.com"),
@@ -264,7 +271,9 @@ NEWMAC_TEAMS = [
     Team(name="Emerson", conference="NEWMAC", site_domain="emersonlions.com"),
     Team(name="MIT", conference="NEWMAC", site_domain="mitathletics.com"),
     Team(name="Salve Regina", conference="NEWMAC", site_domain="salveathletics.com"),
-    Team(name="Springfield College", conference="NEWMAC", site_domain="springfieldcollegepride.com"),
+    Team(
+        name="Springfield College", conference="NEWMAC", site_domain="springfieldcollegepride.com"
+    ),
     Team(name="Wheaton (MA)", conference="NEWMAC", site_domain="wheatoncollegelyons.com"),
     Team(name="WPI", conference="NEWMAC", site_domain="athletics.wpi.edu"),
 ]
@@ -312,7 +321,11 @@ MASCAC_TEAMS = [
     Team(name="Bridgewater State", conference="MASCAC", site_domain="bsubears.com"),
     Team(name="Fitchburg State", conference="MASCAC", site_domain="fitchburgfalcons.com"),
     Team(name="Framingham State", conference="MASCAC", site_domain="fsurams.com"),
-    Team(name="Massachusetts College of Liberal Arts", conference="MASCAC", site_domain="athletics.mcla.edu"),
+    Team(
+        name="Massachusetts College of Liberal Arts",
+        conference="MASCAC",
+        site_domain="athletics.mcla.edu",
+    ),
     Team(name="Massachusetts Maritime", conference="MASCAC", site_domain="mmabucs.com"),
     Team(name="Salem State", conference="MASCAC", site_domain="salemstatevikings.com"),
     Team(name="Worcester State", conference="MASCAC", site_domain="wsulancers.com"),
@@ -407,13 +420,35 @@ UNITED_EAST_TEAMS = [
     Team(name="Gallaudet University", conference="UNITED_EAST", site_domain="gallaudetbison.com"),
     Team(name="Keystone College", conference="UNITED_EAST", site_domain="gokcgiants.com"),
     Team(name="Lancaster Bible College", conference="UNITED_EAST", site_domain="lbcchargers.com"),
-    Team(name="Notre Dame of Maryland University", conference="UNITED_EAST", site_domain="notredamegators.com"),
-    Team(name="Pennsylvania College of Technology", conference="UNITED_EAST", site_domain="pctwildcats.com"),
+    Team(
+        name="Notre Dame of Maryland University",
+        conference="UNITED_EAST",
+        site_domain="notredamegators.com",
+    ),
+    Team(
+        name="Pennsylvania College of Technology",
+        conference="UNITED_EAST",
+        site_domain="pctwildcats.com",
+    ),
     Team(name="Penn State Abington", conference="UNITED_EAST", site_domain="abingtonsports.com"),
     Team(name="Penn State Berks", conference="UNITED_EAST", site_domain="psuberksathletics.com"),
-    Team(name="Penn State Brandywine", conference="UNITED_EAST", site_domain="psubrandywineathletics.com", sport_slug="msoc"),
-    Team(name="Penn State Harrisburg", conference="UNITED_EAST", site_domain="psuharrisburgsports.com", sport_slug="msoc"),
-    Team(name="St. Mary's College of Maryland", conference="UNITED_EAST", site_domain="smcmathletics.com"),
+    Team(
+        name="Penn State Brandywine",
+        conference="UNITED_EAST",
+        site_domain="psubrandywineathletics.com",
+        sport_slug="msoc",
+    ),
+    Team(
+        name="Penn State Harrisburg",
+        conference="UNITED_EAST",
+        site_domain="psuharrisburgsports.com",
+        sport_slug="msoc",
+    ),
+    Team(
+        name="St. Mary's College of Maryland",
+        conference="UNITED_EAST",
+        site_domain="smcmathletics.com",
+    ),
     Team(name="Wilson College", conference="UNITED_EAST", site_domain="wilsonphoenix.com"),
 ]
 # Note: Cedar Crest is women's-soccer-only -- excluded. University of Valley Forge closed
@@ -423,12 +458,22 @@ UNITED_EAST_TEAMS = [
 # Atlantic East Conference
 # ---------------------------------------------------------------------
 ATLANTIC_EAST_TEAMS = [
-    Team(name="Centenary University", conference="ATLANTIC_EAST", site_domain="centenarycyclones.com"),
-    Team(name="Gwynedd Mercy University", conference="ATLANTIC_EAST", site_domain="gwyneddathletics.com"),
+    Team(
+        name="Centenary University", conference="ATLANTIC_EAST", site_domain="centenarycyclones.com"
+    ),
+    Team(
+        name="Gwynedd Mercy University",
+        conference="ATLANTIC_EAST",
+        site_domain="gwyneddathletics.com",
+    ),
     Team(name="Immaculata University", conference="ATLANTIC_EAST", site_domain="gomightymacs.com"),
-    Team(name="Marymount University", conference="ATLANTIC_EAST", site_domain="marymountsaints.com"),
+    Team(
+        name="Marymount University", conference="ATLANTIC_EAST", site_domain="marymountsaints.com"
+    ),
     Team(name="Pratt Institute", conference="ATLANTIC_EAST", site_domain="goprattgo.com"),
-    Team(name="Saint Elizabeth University", conference="ATLANTIC_EAST", site_domain="seueagles.com"),
+    Team(
+        name="Saint Elizabeth University", conference="ATLANTIC_EAST", site_domain="seueagles.com"
+    ),
 ]
 # Note: Marywood and Neumann moved OUT to MAC Freedom/Commonwealth for 2026 -- trust the
 # live standings page over stale Wikipedia listings that still show them here.
@@ -437,15 +482,33 @@ ATLANTIC_EAST_TEAMS = [
 # MAC Commonwealth (Middle Atlantic Conferences -- men's soccer division)
 # ---------------------------------------------------------------------
 MAC_COMMONWEALTH_TEAMS = [
-    Team(name="Albright College", conference="MAC_COMMONWEALTH", site_domain="albrightathletics.com"),
-    Team(name="Alvernia University", conference="MAC_COMMONWEALTH", site_domain="athletics.alvernia.edu"),
-    Team(name="Eastern University", conference="MAC_COMMONWEALTH", site_domain="goeasterneagles.com"),
+    Team(
+        name="Albright College", conference="MAC_COMMONWEALTH", site_domain="albrightathletics.com"
+    ),
+    Team(
+        name="Alvernia University",
+        conference="MAC_COMMONWEALTH",
+        site_domain="athletics.alvernia.edu",
+    ),
+    Team(
+        name="Eastern University", conference="MAC_COMMONWEALTH", site_domain="goeasterneagles.com"
+    ),
     Team(name="Hood College", conference="MAC_COMMONWEALTH", site_domain="hoodathletics.com"),
     Team(name="Messiah University", conference="MAC_COMMONWEALTH", site_domain="gomessiah.com"),
-    Team(name="Neumann University", conference="MAC_COMMONWEALTH", site_domain="neumannathletics.com"),
-    Team(name="Stevenson University", conference="MAC_COMMONWEALTH", site_domain="gomustangsports.com"),
+    Team(
+        name="Neumann University", conference="MAC_COMMONWEALTH", site_domain="neumannathletics.com"
+    ),
+    Team(
+        name="Stevenson University",
+        conference="MAC_COMMONWEALTH",
+        site_domain="gomustangsports.com",
+    ),
     Team(name="Widener University", conference="MAC_COMMONWEALTH", site_domain="widenerpride.com"),
-    Team(name="York College of Pennsylvania", conference="MAC_COMMONWEALTH", site_domain="ycpspartans.com"),
+    Team(
+        name="York College of Pennsylvania",
+        conference="MAC_COMMONWEALTH",
+        site_domain="ycpspartans.com",
+    ),
 ]
 # Note: men's soccer at "MAC" is genuinely split into 2 divisions (Commonwealth/Freedom),
 # unlike some other MAC sports that combine them -- confirmed via gomacsports.com standings
@@ -456,14 +519,30 @@ MAC_COMMONWEALTH_TEAMS = [
 # ---------------------------------------------------------------------
 MAC_FREEDOM_TEAMS = [
     Team(name="Arcadia University", conference="MAC_FREEDOM", site_domain="arcadiaknights.com"),
-    Team(name="Delaware Valley University", conference="MAC_FREEDOM", site_domain="athletics.delval.edu"),
+    Team(
+        name="Delaware Valley University",
+        conference="MAC_FREEDOM",
+        site_domain="athletics.delval.edu",
+    ),
     Team(name="DeSales University", conference="MAC_FREEDOM", site_domain="athletics.desales.edu"),
-    Team(name="Fairleigh Dickinson University-Florham", conference="MAC_FREEDOM", site_domain="fdudevils.com"),
+    Team(
+        name="Fairleigh Dickinson University-Florham",
+        conference="MAC_FREEDOM",
+        site_domain="fdudevils.com",
+    ),
     Team(name="King's College", conference="MAC_FREEDOM", site_domain="kingscollegeathletics.com"),
     Team(name="Lebanon Valley College", conference="MAC_FREEDOM", site_domain="godutchmen.com"),
     Team(name="Marywood University", conference="MAC_FREEDOM", site_domain="marywoodpacers.com"),
-    Team(name="Misericordia University", conference="MAC_FREEDOM", site_domain="athletics.misericordia.edu"),
-    Team(name="Stevens Institute of Technology", conference="MAC_FREEDOM", site_domain="stevensducks.com"),
+    Team(
+        name="Misericordia University",
+        conference="MAC_FREEDOM",
+        site_domain="athletics.misericordia.edu",
+    ),
+    Team(
+        name="Stevens Institute of Technology",
+        conference="MAC_FREEDOM",
+        site_domain="stevensducks.com",
+    ),
 ]
 # Note: don't confuse FDU-Florham (D3, fdudevils.com) with the main FDU Knights D1 site.
 # Marywood joined from Atlantic East for 2026.
@@ -472,14 +551,20 @@ MAC_FREEDOM_TEAMS = [
 # Landmark Conference
 # ---------------------------------------------------------------------
 LANDMARK_TEAMS = [
-    Team(name="Catholic University of America", conference="LANDMARK", site_domain="catholicathletics.com"),
+    Team(
+        name="Catholic University of America",
+        conference="LANDMARK",
+        site_domain="catholicathletics.com",
+    ),
     Team(name="Drew University", conference="LANDMARK", site_domain="drewrangers.com"),
     Team(name="Elizabethtown College", conference="LANDMARK", site_domain="etownbluejays.com"),
     Team(name="Goucher College", conference="LANDMARK", site_domain="athletics.goucher.edu"),
     Team(name="Juniata College", conference="LANDMARK", site_domain="juniatasports.net"),
     Team(name="Lycoming College", conference="LANDMARK", site_domain="lycomingathletics.com"),
     Team(name="Moravian University", conference="LANDMARK", site_domain="moraviansports.com"),
-    Team(name="University of Scranton", conference="LANDMARK", site_domain="athletics.scranton.edu"),
+    Team(
+        name="University of Scranton", conference="LANDMARK", site_domain="athletics.scranton.edu"
+    ),
     Team(name="Susquehanna University", conference="LANDMARK", site_domain="suriverhawks.com"),
     Team(name="Wilkes University", conference="LANDMARK", site_domain="gowilkesu.com"),
 ]
@@ -494,10 +579,24 @@ AMCC_TEAMS = [
     Team(name="Hilbert College", conference="AMCC", site_domain="hilberthawks.com"),
     Team(name="La Roche University", conference="AMCC", site_domain="larochesports.com"),
     Team(name="Mount Aloysius College", conference="AMCC", site_domain="mountieathletics.com"),
-    Team(name="Penn State Altoona", conference="AMCC", site_domain="psaltoonalions.com", sport_slug="msoc"),
+    Team(
+        name="Penn State Altoona",
+        conference="AMCC",
+        site_domain="psaltoonalions.com",
+        sport_slug="msoc",
+    ),
     Team(name="Penn State Behrend", conference="AMCC", site_domain="psblions.com"),
-    Team(name="University of Pittsburgh at Bradford", conference="AMCC", site_domain="athletics.pittbradford.org", sport_slug="msoc"),
-    Team(name="University of Pittsburgh at Greensburg", conference="AMCC", site_domain="pittgreensburgathletics.com"),
+    Team(
+        name="University of Pittsburgh at Bradford",
+        conference="AMCC",
+        site_domain="athletics.pittbradford.org",
+        sport_slug="msoc",
+    ),
+    Team(
+        name="University of Pittsburgh at Greensburg",
+        conference="AMCC",
+        site_domain="pittgreensburgathletics.com",
+    ),
 ]
 # Note: amccsports.org blocks automated fetches (403) -- standings URL below is the
 # conventional pattern, unverified. Penn State Behrend may run PrestoSports instead of
@@ -518,7 +617,9 @@ PAC_TEAMS = [
     Team(name="Franciscan University", conference="PAC", site_domain="franciscanathletics.com"),
     Team(name="Geneva College", conference="PAC", site_domain="athletics.geneva.edu"),
     Team(name="Saint Vincent College", conference="PAC", site_domain="athletics.stvincent.edu"),
-    Team(name="Westminster College (PA)", conference="PAC", site_domain="athletics.westminster.edu"),
+    Team(
+        name="Westminster College (PA)", conference="PAC", site_domain="athletics.westminster.edu"
+    ),
     Team(name="Saint Francis University (PA)", conference="PAC", site_domain="sfuathletics.com"),
 ]
 # Note: Hiram returned to PAC for 2025-26 after 35 years away. The 5 domains above (Franciscan,
@@ -558,7 +659,11 @@ SAA_TEAMS = [
     Team(name="Millsaps College", conference="SAA", site_domain="gomajors.com"),
     Team(name="Oglethorpe University", conference="SAA", site_domain="gopetrels.com"),
     Team(name="Rhodes College", conference="SAA", site_domain="rhodeslynx.com"),
-    Team(name="Sewanee: The University of the South", conference="SAA", site_domain="sewaneetigers.com"),
+    Team(
+        name="Sewanee: The University of the South",
+        conference="SAA",
+        site_domain="sewaneetigers.com",
+    ),
     Team(name="Southwestern University", conference="SAA", site_domain="southwesternpirates.com"),
     Team(name="Trinity University", conference="SAA", site_domain="trinitytigers.com"),
 ]
@@ -574,7 +679,9 @@ SCAC_TEAMS = [
     Team(name="Colorado College", conference="SCAC", site_domain="cctigers.com"),
     Team(name="Schreiner University", conference="SCAC", site_domain="schreinermountaineers.com"),
     Team(name="Texas Lutheran University", conference="SCAC", site_domain="tlubulldogs.com"),
-    Team(name="Concordia University Texas", conference="SCAC", site_domain="athletics.concordia.edu"),
+    Team(
+        name="Concordia University Texas", conference="SCAC", site_domain="athletics.concordia.edu"
+    ),
     Team(name="University of Dallas", conference="SCAC", site_domain="dallas.prestosports.com"),
     Team(name="Hendrix College", conference="SCAC", site_domain="hendrixwarriors.com"),
     Team(name="LeTourneau University", conference="SCAC", site_domain="letuathletics.com"),
@@ -594,13 +701,27 @@ SCAC_TEAMS = [
 # ---------------------------------------------------------------------
 USA_SOUTH_TEAMS = [
     Team(name="Brevard College", conference="USA_SOUTH", site_domain="bctornados.com"),
-    Team(name="Greensboro College", conference="USA_SOUTH", site_domain="greensborocollegesports.com"),
+    Team(
+        name="Greensboro College", conference="USA_SOUTH", site_domain="greensborocollegesports.com"
+    ),
     Team(name="Methodist University", conference="USA_SOUTH", site_domain="mumonarchs.com"),
     Team(name="Pfeiffer University", conference="USA_SOUTH", site_domain="gofalconsports.com"),
     Team(name="William Peace University", conference="USA_SOUTH", site_domain="gopeacepacers.com"),
-    Team(name="North Carolina Wesleyan University", conference="USA_SOUTH", site_domain="ncwsports.com"),
-    Team(name="Southern Virginia University", conference="USA_SOUTH", site_domain="knightathletics.com"),
-    Team(name="Mary Baldwin University", conference="USA_SOUTH", site_domain="marybaldwinathletics.com"),
+    Team(
+        name="North Carolina Wesleyan University",
+        conference="USA_SOUTH",
+        site_domain="ncwsports.com",
+    ),
+    Team(
+        name="Southern Virginia University",
+        conference="USA_SOUTH",
+        site_domain="knightathletics.com",
+    ),
+    Team(
+        name="Mary Baldwin University",
+        conference="USA_SOUTH",
+        site_domain="marybaldwinathletics.com",
+    ),
 ]
 # Note: Meredith and Salem are women's colleges, no men's soccer -- excluded.
 
@@ -624,7 +745,11 @@ ASC_TEAMS = [
 # ---------------------------------------------------------------------
 C2C_TEAMS = [
     Team(name="Christopher Newport University", conference="C2C", site_domain="cnusports.com"),
-    Team(name="Johnson & Wales University-Charlotte", conference="C2C", site_domain="charlotte.jwuathletics.com"),
+    Team(
+        name="Johnson & Wales University-Charlotte",
+        conference="C2C",
+        site_domain="charlotte.jwuathletics.com",
+    ),
     Team(name="University of Mary Washington", conference="C2C", site_domain="umweagles.com"),
     Team(name="Regent University", conference="C2C", site_domain="regentroyals.com"),
     Team(name="Salisbury University", conference="C2C", site_domain="suseagulls.com"),
@@ -645,8 +770,17 @@ HCAC_TEAMS = [
     Team(name="Hanover College", conference="HCAC", site_domain="athletics.hanover.edu"),
     Team(name="Manchester University", conference="HCAC", site_domain="muspartans.com"),
     Team(name="Mount St. Joseph University", conference="HCAC", site_domain="msjlions.com"),
-    Team(name="Rose-Hulman Institute of Technology", conference="HCAC", site_domain="athletics.rose-hulman.edu"),
-    Team(name="Transylvania University", conference="HCAC", site_domain="transysports.com", sport_slug="msoc"),
+    Team(
+        name="Rose-Hulman Institute of Technology",
+        conference="HCAC",
+        site_domain="athletics.rose-hulman.edu",
+    ),
+    Team(
+        name="Transylvania University",
+        conference="HCAC",
+        site_domain="transysports.com",
+        sport_slug="msoc",
+    ),
 ]
 # Note: Anderson and Bluffton sites block automated fetches (403) on the mens-soccer subpage.
 # Manchester leaves HCAC for NAIA after 2026-27 -- fine for this season.
@@ -677,7 +811,11 @@ NACC_TEAMS = [
     Team(name="Lakeland University", conference="NACC", site_domain="lakelandmuskies.com"),
     Team(name="St. Norbert College", conference="NACC", site_domain="athletics.snc.edu"),
     Team(name="Milwaukee School of Engineering", conference="NACC", site_domain="msoeraiders.com"),
-    Team(name="Illinois Institute of Technology", conference="NACC", site_domain="illinoistechathletics.com"),
+    Team(
+        name="Illinois Institute of Technology",
+        conference="NACC",
+        site_domain="illinoistechathletics.com",
+    ),
     Team(name="Dominican University (IL)", conference="NACC", site_domain="dustars.com"),
     Team(name="Wisconsin Lutheran College", conference="NACC", site_domain="wlcsports.com"),
     Team(name="Concordia University Chicago", conference="NACC", site_domain="cucougars.com"),
@@ -752,12 +890,26 @@ ARC_TEAMS = [
 # St. Louis Intercollegiate Athletic Conference (SLIAC)
 # ---------------------------------------------------------------------
 SLIAC_TEAMS = [
-    Team(name="Blackburn College", conference="SLIAC", site_domain="www.blackburnbeavers.com", sport_slug="msoc"),
-    Team(name="Eureka College", conference="SLIAC", site_domain="www.eurekareddevils.com", sport_slug="msoc"),
+    Team(
+        name="Blackburn College",
+        conference="SLIAC",
+        site_domain="www.blackburnbeavers.com",
+        sport_slug="msoc",
+    ),
+    Team(
+        name="Eureka College",
+        conference="SLIAC",
+        site_domain="www.eurekareddevils.com",
+        sport_slug="msoc",
+    ),
     Team(name="Greenville University", conference="SLIAC", site_domain="athletics.greenville.edu"),
     Team(name="Lyon College", conference="SLIAC", site_domain="lyonscots.com"),
-    Team(name="Mississippi University for Women", conference="SLIAC", site_domain="owlsathletics.com"),
-    Team(name="Principia College", conference="SLIAC", site_domain="athletics.principiacollege.edu"),
+    Team(
+        name="Mississippi University for Women", conference="SLIAC", site_domain="owlsathletics.com"
+    ),
+    Team(
+        name="Principia College", conference="SLIAC", site_domain="athletics.principiacollege.edu"
+    ),
     Team(name="Spalding University", conference="SLIAC", site_domain="spaldingathletics.com"),
     Team(name="Webster University", conference="SLIAC", site_domain="websterathletics.com"),
     Team(name="Westminster College (MO)", conference="SLIAC", site_domain="wcbluejays.wcmo.edu"),
@@ -772,10 +924,18 @@ UMAC_TEAMS = [
     Team(name="Bethany Lutheran College", conference="UMAC", site_domain="blcvikings.com"),
     Team(name="Crown College", conference="UMAC", site_domain="athletics.crown.edu"),
     Team(name="Martin Luther College", conference="UMAC", site_domain="mlcknights.com"),
-    Team(name="University of Minnesota, Morris", conference="UMAC", site_domain="morriscougars.com"),
+    Team(
+        name="University of Minnesota, Morris", conference="UMAC", site_domain="morriscougars.com"
+    ),
     Team(name="North Central University", conference="UMAC", site_domain="ncurams.com"),
-    Team(name="University of Northwestern - St. Paul", conference="UMAC", site_domain="unweagles.com"),
-    Team(name="University of Wisconsin-Superior", conference="UMAC", site_domain="uwsyellowjackets.com"),
+    Team(
+        name="University of Northwestern - St. Paul", conference="UMAC", site_domain="unweagles.com"
+    ),
+    Team(
+        name="University of Wisconsin-Superior",
+        conference="UMAC",
+        site_domain="uwsyellowjackets.com",
+    ),
 ]
 # Note: "North Central University" (UMAC, Minneapolis MN) != "North Central College" (CCIW,
 # Naperville IL) -- do not dedupe. St. Scholastica and Northland left UMAC previously
@@ -784,46 +944,135 @@ UMAC_TEAMS = [
 
 CONFERENCES = {
     "LEC": {"teams": LEC_TEAMS, "standings_url": "https://littleeast.com/standings.aspx?path=msoc"},
-    "NAC": {"teams": NAC_TEAMS, "standings_url": "https://nacathletics.com/standings.aspx?path=msoc"},
-    "MASCAC": {"teams": MASCAC_TEAMS, "standings_url": "https://www.mascac.com/standings.aspx?path=msoc"},
-    "Skyline": {"teams": SKYLINE_TEAMS, "standings_url": "https://skylineconference.org/standings.aspx?path=msoc"},
-    "SUNYAC": {"teams": SUNYAC_TEAMS, "standings_url": "https://sunyacsports.com/standings.aspx?path=msoc"},
-    "GNAC": {"teams": GNAC_TEAMS, "standings_url": "https://www.thegnac.com/standings.aspx?path=msoc"},
-    "CUNYAC": {"teams": CUNYAC_TEAMS, "standings_url": "https://cunyathletics.com/standings.aspx?path=msoccer"},
-    "UNITED_EAST": {"teams": UNITED_EAST_TEAMS, "standings_url": "https://gounitedeast.com/standings.aspx?path=msoc"},
-    "ATLANTIC_EAST": {"teams": ATLANTIC_EAST_TEAMS, "standings_url": "https://atlanticeast.com/standings.aspx?path=msoc"},
-    "MAC_COMMONWEALTH": {"teams": MAC_COMMONWEALTH_TEAMS, "standings_url": "https://gomacsports.com/standings.aspx?path=msoc&div=mac-commonwealth"},
-    "MAC_FREEDOM": {"teams": MAC_FREEDOM_TEAMS, "standings_url": "https://gomacsports.com/standings.aspx?path=msoc&div=mac-freedom"},
-    "LANDMARK": {"teams": LANDMARK_TEAMS, "standings_url": "https://landmarkconference.org/standings.aspx?path=msoc"},
-    "AMCC": {"teams": AMCC_TEAMS, "standings_url": "https://www.amccsports.org/standings.aspx?path=msoc"},
-    "PAC": {"teams": PAC_TEAMS, "standings_url": "https://pacathletics.org/standings.aspx?path=msoc"},
-    "ODAC": {"teams": ODAC_TEAMS, "standings_url": "https://odaconline.com/standings.aspx?path=msoc"},
+    "NAC": {
+        "teams": NAC_TEAMS,
+        "standings_url": "https://nacathletics.com/standings.aspx?path=msoc",
+    },
+    "MASCAC": {
+        "teams": MASCAC_TEAMS,
+        "standings_url": "https://www.mascac.com/standings.aspx?path=msoc",
+    },
+    "Skyline": {
+        "teams": SKYLINE_TEAMS,
+        "standings_url": "https://skylineconference.org/standings.aspx?path=msoc",
+    },
+    "SUNYAC": {
+        "teams": SUNYAC_TEAMS,
+        "standings_url": "https://sunyacsports.com/standings.aspx?path=msoc",
+    },
+    "GNAC": {
+        "teams": GNAC_TEAMS,
+        "standings_url": "https://www.thegnac.com/standings.aspx?path=msoc",
+    },
+    "CUNYAC": {
+        "teams": CUNYAC_TEAMS,
+        "standings_url": "https://cunyathletics.com/standings.aspx?path=msoccer",
+    },
+    "UNITED_EAST": {
+        "teams": UNITED_EAST_TEAMS,
+        "standings_url": "https://gounitedeast.com/standings.aspx?path=msoc",
+    },
+    "ATLANTIC_EAST": {
+        "teams": ATLANTIC_EAST_TEAMS,
+        "standings_url": "https://atlanticeast.com/standings.aspx?path=msoc",
+    },
+    "MAC_COMMONWEALTH": {
+        "teams": MAC_COMMONWEALTH_TEAMS,
+        "standings_url": "https://gomacsports.com/standings.aspx?path=msoc&div=mac-commonwealth",
+    },
+    "MAC_FREEDOM": {
+        "teams": MAC_FREEDOM_TEAMS,
+        "standings_url": "https://gomacsports.com/standings.aspx?path=msoc&div=mac-freedom",
+    },
+    "LANDMARK": {
+        "teams": LANDMARK_TEAMS,
+        "standings_url": "https://landmarkconference.org/standings.aspx?path=msoc",
+    },
+    "AMCC": {
+        "teams": AMCC_TEAMS,
+        "standings_url": "https://www.amccsports.org/standings.aspx?path=msoc",
+    },
+    "PAC": {
+        "teams": PAC_TEAMS,
+        "standings_url": "https://pacathletics.org/standings.aspx?path=msoc",
+    },
+    "ODAC": {
+        "teams": ODAC_TEAMS,
+        "standings_url": "https://odaconline.com/standings.aspx?path=msoc",
+    },
     "SAA": {"teams": SAA_TEAMS, "standings_url": "https://saa-sports.com/standings.aspx?path=msoc"},
-    "SCAC": {"teams": SCAC_TEAMS, "standings_url": "https://scacsports.com/standings.aspx?path=msoc"},
-    "USA_SOUTH": {"teams": USA_SOUTH_TEAMS, "standings_url": "https://usasouth.net/standings.aspx?path=msoc"},
+    "SCAC": {
+        "teams": SCAC_TEAMS,
+        "standings_url": "https://scacsports.com/standings.aspx?path=msoc",
+    },
+    "USA_SOUTH": {
+        "teams": USA_SOUTH_TEAMS,
+        "standings_url": "https://usasouth.net/standings.aspx?path=msoc",
+    },
     "ASC": {"teams": ASC_TEAMS, "standings_url": "https://ascsports.org/standings.aspx?path=msoc"},
-    "C2C": {"teams": C2C_TEAMS, "standings_url": "https://www.c2csports.com/sports/msoc/2025-26/standings"},
-    "HCAC": {"teams": HCAC_TEAMS, "standings_url": "https://heartlandconf.org/standings.aspx?path=msoc"},
+    "C2C": {
+        "teams": C2C_TEAMS,
+        "standings_url": "https://www.c2csports.com/sports/msoc/2025-26/standings",
+    },
+    "HCAC": {
+        "teams": HCAC_TEAMS,
+        "standings_url": "https://heartlandconf.org/standings.aspx?path=msoc",
+    },
     "MIAA": {"teams": MIAA_TEAMS, "standings_url": "https://miaa.org/standings.aspx?path=msoc"},
-    "NACC": {"teams": NACC_TEAMS, "standings_url": "https://naccsports.org/standings.aspx?path=msoc"},
+    "NACC": {
+        "teams": NACC_TEAMS,
+        "standings_url": "https://naccsports.org/standings.aspx?path=msoc",
+    },
     "CCIW": {"teams": CCIW_TEAMS, "standings_url": "https://cciw.org/standings.aspx?path=msoc"},
-    "MWC": {"teams": MWC_TEAMS, "standings_url": "https://midwestconference.org/standings.aspx?path=msoc"},
+    "MWC": {
+        "teams": MWC_TEAMS,
+        "standings_url": "https://midwestconference.org/standings.aspx?path=msoc",
+    },
     "ARC": {"teams": ARC_TEAMS, "standings_url": "https://rollrivers.com/standings.aspx?path=msoc"},
     "SLIAC": {"teams": SLIAC_TEAMS, "standings_url": "https://sliac.org/standings.aspx?path=msoc"},
-    "UMAC": {"teams": UMAC_TEAMS, "standings_url": "https://umacathletics.com/standings.aspx?path=msoc"},
-
+    "UMAC": {
+        "teams": UMAC_TEAMS,
+        "standings_url": "https://umacathletics.com/standings.aspx?path=msoc",
+    },
     "NESCAC": {"teams": NESCAC_TEAMS, "standings_url": None},  # see fetch_nescac_standings
     "UAA": {"teams": UAA_TEAMS, "standings_url": "https://uaasports.info/standings.aspx?path=msoc"},
-    "MIAC": {"teams": MIAC_TEAMS, "standings_url": "https://miacathletics.com/standings.aspx?path=msoc"},
-    "WIAC": {"teams": WIAC_TEAMS, "standings_url": "https://wiacsports.com/standings.aspx?path=msoc"},
-    "Northwest Conference": {"teams": NWC_TEAMS, "standings_url": "https://nwcsports.com/standings.aspx?path=msoc"},
-    "Liberty League": {"teams": LIBERTY_LEAGUE_TEAMS, "standings_url": "https://libertyleagueathletics.com/standings.aspx?path=msoc"},
-    "Centennial": {"teams": CENTENNIAL_TEAMS, "standings_url": "https://centennial.org/standings.aspx?path=msoc"},
-    "Empire 8": {"teams": EMPIRE8_TEAMS, "standings_url": "https://empire8.com/standings.aspx?path=msoc"},
+    "MIAC": {
+        "teams": MIAC_TEAMS,
+        "standings_url": "https://miacathletics.com/standings.aspx?path=msoc",
+    },
+    "WIAC": {
+        "teams": WIAC_TEAMS,
+        "standings_url": "https://wiacsports.com/standings.aspx?path=msoc",
+    },
+    "Northwest Conference": {
+        "teams": NWC_TEAMS,
+        "standings_url": "https://nwcsports.com/standings.aspx?path=msoc",
+    },
+    "Liberty League": {
+        "teams": LIBERTY_LEAGUE_TEAMS,
+        "standings_url": "https://libertyleagueathletics.com/standings.aspx?path=msoc",
+    },
+    "Centennial": {
+        "teams": CENTENNIAL_TEAMS,
+        "standings_url": "https://centennial.org/standings.aspx?path=msoc",
+    },
+    "Empire 8": {
+        "teams": EMPIRE8_TEAMS,
+        "standings_url": "https://empire8.com/standings.aspx?path=msoc",
+    },
     "OAC": {"teams": OAC_TEAMS, "standings_url": "https://oac.org/standings.aspx?path=msoc"},
-    "NCAC": {"teams": NCAC_TEAMS, "standings_url": "https://northcoast.org/standings.aspx?path=msoc"},
-    "NJAC": {"teams": NJAC_TEAMS, "standings_url": "https://njacsports.com/standings.aspx?path=msoc"},
-    "NEWMAC": {"teams": NEWMAC_TEAMS, "standings_url": "https://newmacsports.com/standings.aspx?path=msoc"},
+    "NCAC": {
+        "teams": NCAC_TEAMS,
+        "standings_url": "https://northcoast.org/standings.aspx?path=msoc",
+    },
+    "NJAC": {
+        "teams": NJAC_TEAMS,
+        "standings_url": "https://njacsports.com/standings.aspx?path=msoc",
+    },
+    "NEWMAC": {
+        "teams": NEWMAC_TEAMS,
+        "standings_url": "https://newmacsports.com/standings.aspx?path=msoc",
+    },
 }
 
 
@@ -856,7 +1105,10 @@ def _parse_sidearm_standings_table(html: str, conference_name: str) -> list[Stan
         return []
 
     thead = table.find("thead")
-    raw_headers = [th.get_text(strip=True) for th in thead.select("th.hide-on-medium-down, th:not(.hide-on-large)")]
+    raw_headers = [
+        th.get_text(strip=True)
+        for th in thead.select("th.hide-on-medium-down, th:not(.hide-on-large)")
+    ]
     headers: list[str] = []
     for h in raw_headers:
         if not headers or headers[-1] != h:
@@ -872,13 +1124,15 @@ def _parse_sidearm_standings_table(html: str, conference_name: str) -> list[Stan
         team_name = _first_matching(row_map, "School", "Team")
         if not team_name:
             continue
-        rows.append(StandingRow(
-            conference=conference_name,
-            team=team_name,
-            conf_record=_first_matching(row_map, "CONF. W-L", "Conf", "Conference") or "",
-            overall_record=_first_matching(row_map, "W-L", "Overall") or "",
-            conf_points=_first_matching(row_map, "CONF. PCT", "CPct.", "Pct."),
-        ))
+        rows.append(
+            StandingRow(
+                conference=conference_name,
+                team=team_name,
+                conf_record=_first_matching(row_map, "CONF. W-L", "Conf", "Conference") or "",
+                overall_record=_first_matching(row_map, "W-L", "Overall") or "",
+                conf_points=_first_matching(row_map, "CONF. PCT", "CPct.", "Pct."),
+            )
+        )
     return rows
 
 
@@ -886,7 +1140,9 @@ def fetch_standings(conference_key: str) -> list[StandingRow]:
     """Fetch current standings for any conference in CONFERENCES except NESCAC."""
     cfg = CONFERENCES[conference_key]
     if cfg["standings_url"] is None:
-        raise ValueError(f"{conference_key} has no static standings URL -- use its dedicated fetch function")
+        raise ValueError(
+            f"{conference_key} has no static standings URL -- use its dedicated fetch function"
+        )
     resp = requests.get(cfg["standings_url"], headers=HEADERS, timeout=TIMEOUT)
     resp.raise_for_status()
     return _parse_sidearm_standings_table(resp.text, conference_key)

@@ -45,28 +45,38 @@ Claremont-Mudd-Scripps) on 2026-09-18:
 
 ## Layout
 
-- `models.py` — shared data shapes (Team, Player, Game, StandingRow)
-- `scrapers/sidearm.py` — generic scraper for any Sidearm-template team site
-  (roster / schedule / stats), reusable across schools and, eventually,
-  across conferences
-- `scrapers/sciac.py` — SCIAC team registry (the 10 domains) + conference
+Paths are relative to the repo root.
+
+- `src/d3soccer/models.py` — shared data shapes (Team, Player, Game, StandingRow)
+- `src/d3soccer/scrapers/sidearm.py` — generic scraper for any Sidearm-template team site
+  (roster / schedule / stats), reusable across schools and conferences
+- `src/d3soccer/scrapers/sciac.py` — SCIAC team registry (the 10 domains) + conference
   standings scraper
-- `scrapers/ncaa_national.py` — national stat leaders, live scores, and the
-  United Soccer Coaches D3 poll (all already confirmed working)
-- `run_sciac_pilot.py` — orchestrates a full pull for SCIAC and writes JSON
-  to `data/`
-- `data/sciac_snapshot_2026-09-18.json` — a real snapshot, hand-verified
-  against live pages during this session (standings for all 10 teams, full
-  Occidental roster/schedule/stats, partial rosters for Chapman and
-  Pomona-Pitzer)
+- `src/d3soccer/scrapers/conferences.py` — team registries and standings for the other
+  conferences
+- `src/d3soccer/scrapers/ncaa_national.py` — national stat leaders, live scores, and the
+  United Soccer Coaches D3 poll
+- `src/d3soccer/pipelines/conferences.py` — pulls every conference (or the ones
+  named) into one `conferences_snapshot_<date>.json`; failed or empty fetches keep
+  the team's previous data and are listed under `stale` / `failures`
+- `src/d3soccer/pipelines/national.py` — leaders, team leaders, NPI, scoreboard and
+  the coaches' poll into `national_snapshot_<date>.json`, same carry-forward rule
+- `src/d3soccer/pipelines/app_data.py` — turns the newest snapshots into
+  `web/app_data.js`
+- `data/snapshots/` — only the newest file per family is kept; older ones are in git
+  history. The `sciac`, `conferences2/3` and `leaders` files from the pilot scripts
+  are still read, and get pruned the first time the new jobs run.
 
 ## Running it for real
 
-1. Deploy this to any host with normal outbound internet (a small VPS,
-   Vercel/Render/Fly, etc.) — not this sandbox.
-2. `pip install -r requirements.txt`
+1. Run on any host with normal outbound internet (a small VPS, a CI runner, etc.).
+2. `uv sync`
 3. Fetch one live page (`curl https://oxyathletics.com/sports/mens-soccer/roster`)
    and compare its actual HTML to the selectors in `sidearm.py`; adjust.
-4. `python run_sciac_pilot.py` to pull everything and write `data/*.json`.
-5. Once this is solid for SCIAC, add conferences one at a time by adding
-   entries to a `CONFERENCES` registry modeled on `sciac.py`.
+4. `uv run d3soccer scrape conferences SCIAC` to pull one conference, or
+   `scrape national` / `scrape conferences` / `scrape all`. In production the
+   Refresh data workflow runs these on a schedule (see the README).
+5. `uv run d3soccer build` to regenerate `web/app_data.js`, then
+   `uv run d3soccer serve` to view the site.
+6. Add conferences one at a time by adding entries to the `CONFERENCES` registry in
+   `conferences.py`.

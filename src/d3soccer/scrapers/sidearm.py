@@ -36,12 +36,11 @@ that one page and check its markup the same way this file was built.
 from __future__ import annotations
 
 import re
-from typing import Optional
 
 import requests
 from bs4 import BeautifulSoup
 
-from models import Player, Game
+from d3soccer.models import Game, Player
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; D3SoccerAppBot/0.1; contact: elijahredelman@gmail.com)"
@@ -63,6 +62,7 @@ def _clean(text: str) -> str:
 # Roster
 # ---------------------------------------------------------------------
 
+
 def fetch_roster(site_domain: str, team_name: str, sport_slug: str = "mens-soccer") -> list[Player]:
     url = f"https://{site_domain}/sports/{sport_slug}/roster"
     soup = _get(url)
@@ -72,8 +72,9 @@ def fetch_roster(site_domain: str, team_name: str, sport_slug: str = "mens-socce
 def _parse_roster_html(soup: BeautifulSoup, team_name: str) -> list[Player]:
     players: list[Player] = []
     for li in soup.select("li.sidearm-roster-player"):
+
         def txt(sel: str) -> str:
-            el = li.select_one(sel)
+            el = li.select_one(sel)  # noqa: B023 -- called within this iteration only
             return _clean(el.get_text(strip=True)) if el else ""
 
         pos_el = li.select_one(".sidearm-roster-player-position")
@@ -87,16 +88,18 @@ def _parse_roster_html(soup: BeautifulSoup, team_name: str) -> list[Player]:
         if not name or not number:
             continue  # skip coach/staff cards or malformed entries
 
-        players.append(Player(
-            team=team_name,
-            number=number,
-            name=name,
-            position=position,
-            class_year=txt(".sidearm-roster-player-academic-year"),
-            height=txt(".sidearm-roster-player-height") or None,
-            hometown=txt(".sidearm-roster-player-hometown") or None,
-            high_school=txt(".sidearm-roster-player-highschool") or None,
-        ))
+        players.append(
+            Player(
+                team=team_name,
+                number=number,
+                name=name,
+                position=position,
+                class_year=txt(".sidearm-roster-player-academic-year"),
+                height=txt(".sidearm-roster-player-height") or None,
+                hometown=txt(".sidearm-roster-player-hometown") or None,
+                high_school=txt(".sidearm-roster-player-highschool") or None,
+            )
+        )
     return players
 
 
@@ -104,7 +107,10 @@ def _parse_roster_html(soup: BeautifulSoup, team_name: str) -> list[Player]:
 # Schedule
 # ---------------------------------------------------------------------
 
-def fetch_schedule(site_domain: str, team_name: str, year: int, sport_slug: str = "mens-soccer") -> list[Game]:
+
+def fetch_schedule(
+    site_domain: str, team_name: str, year: int, sport_slug: str = "mens-soccer"
+) -> list[Game]:
     url = f"https://{site_domain}/sports/{sport_slug}/schedule/{year}"
     soup = _get(url)
     return _parse_schedule_html(soup, team_name)
@@ -116,15 +122,18 @@ def _parse_schedule_html(soup: BeautifulSoup, team_name: str) -> list[Game]:
         opp_el = li.select_one(".sidearm-schedule-game-opponent-name")
         date_el = li.select_one(".sidearm-schedule-game-opponent-date span")
         result_el = li.select_one(".sidearm-schedule-game-result")
-        venue_el = (li.select_one(".sidearm-schedule-game-location")
-                    or li.select_one(".sidearm-schedule-game-location a")
-                    or li.select_one("[class*='schedule-game-location']"))
+        venue_el = (
+            li.select_one(".sidearm-schedule-game-location")
+            or li.select_one(".sidearm-schedule-game-location a")
+            or li.select_one("[class*='schedule-game-location']")
+        )
         # Upcoming games show a separate time element; final games often
         # fold the time into the result text instead, so this is only
         # populated pre-kickoff -- not yet verified against every school's
         # markup (only Occidental's page has been inspected raw so far).
-        time_el = (li.select_one(".sidearm-schedule-game-time")
-                   or li.select_one("[class*='schedule-game-time']"))
+        time_el = li.select_one(".sidearm-schedule-game-time") or li.select_one(
+            "[class*='schedule-game-time']"
+        )
 
         opponent = _clean(opp_el.get_text(strip=True)) if opp_el else ""
         date = _clean(date_el.get_text(strip=True)) if date_el else ""
@@ -136,27 +145,32 @@ def _parse_schedule_html(soup: BeautifulSoup, team_name: str) -> list[Game]:
             continue
 
         classes = li.get("class", [])
-        location = "home" if "sidearm-schedule-home-game" in classes else (
-            "away" if "sidearm-schedule-away-game" in classes else "unknown"
+        location = (
+            "home"
+            if "sidearm-schedule-home-game" in classes
+            else ("away" if "sidearm-schedule-away-game" in classes else "unknown")
         )
         conference_game = bool(li.select_one(".sidearm-schedule-game-opponent-promotion"))
 
-        games.append(Game(
-            team=team_name,
-            date=date,
-            opponent=opponent,
-            location=location,
-            conference_game=conference_game,
-            result=result or None,
-            venue=venue or None,
-            time=time or None,
-        ))
+        games.append(
+            Game(
+                team=team_name,
+                date=date,
+                opponent=opponent,
+                location=location,
+                conference_game=conference_game,
+                result=result or None,
+                venue=venue or None,
+                time=time or None,
+            )
+        )
     return games
 
 
 # ---------------------------------------------------------------------
 # Stats
 # ---------------------------------------------------------------------
+
 
 def fetch_stats(site_domain: str, team_name: str, sport_slug: str = "mens-soccer") -> list[Player]:
     """
@@ -205,28 +219,40 @@ def _parse_stats_html(soup: BeautifulSoup, team_name: str) -> list[Player]:
             seen_names.add(name)
 
             if is_keeper_table:
-                players.append(Player(
-                    team=team_name, number="", name=name, position="GK", class_year="",
-                    games_played=_to_int(row_map.get("GP")),
-                    minutes=_to_int(row_map.get("MIN")),
-                    goals_against=_to_int(row_map.get("GA")),
-                    saves=_to_int(row_map.get("SV")),
-                    save_pct=_to_float(row_map.get("SV%")),
-                ))
+                players.append(
+                    Player(
+                        team=team_name,
+                        number="",
+                        name=name,
+                        position="GK",
+                        class_year="",
+                        games_played=_to_int(row_map.get("GP")),
+                        minutes=_to_int(row_map.get("MIN")),
+                        goals_against=_to_int(row_map.get("GA")),
+                        saves=_to_int(row_map.get("SV")),
+                        save_pct=_to_float(row_map.get("SV%")),
+                    )
+                )
             else:
-                players.append(Player(
-                    team=team_name, number="", name=name, position="", class_year="",
-                    games_played=_to_int(row_map.get("GP")),
-                    goals=_to_int(row_map.get("G")),
-                    assists=_to_int(row_map.get("A")),
-                    points=_to_int(row_map.get("PTS")),
-                    shots=_to_int(row_map.get("SH")),
-                    minutes=_to_int(row_map.get("MIN")),
-                ))
+                players.append(
+                    Player(
+                        team=team_name,
+                        number="",
+                        name=name,
+                        position="",
+                        class_year="",
+                        games_played=_to_int(row_map.get("GP")),
+                        goals=_to_int(row_map.get("G")),
+                        assists=_to_int(row_map.get("A")),
+                        points=_to_int(row_map.get("PTS")),
+                        shots=_to_int(row_map.get("SH")),
+                        minutes=_to_int(row_map.get("MIN")),
+                    )
+                )
     return players
 
 
-def _to_int(v: Optional[str]) -> Optional[int]:
+def _to_int(v: str | None) -> int | None:
     if not v:
         return None
     try:
@@ -235,7 +261,7 @@ def _to_int(v: Optional[str]) -> Optional[int]:
         return None
 
 
-def _to_float(v: Optional[str]) -> Optional[float]:
+def _to_float(v: str | None) -> float | None:
     if not v:
         return None
     try:
