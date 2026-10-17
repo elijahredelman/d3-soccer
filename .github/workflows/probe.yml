@@ -1,0 +1,35 @@
+name: Probe sites
+
+# Describes the markup of pages the scrapers fail on, from a host that can reach
+# them. Read the results in the run's "Probe" step log.
+on:
+  workflow_dispatch:
+    inputs:
+      failed:
+        description: Probe every non-403 failure in the latest snapshot
+        type: boolean
+        default: true
+      urls:
+        description: Extra URLs to probe (space-separated)
+        required: false
+      links:
+        description: Also list links whose href contains this text
+        required: false
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --no-dev
+      - name: Probe
+        env:
+          URLS: ${{ inputs.urls }}
+          FAILED: ${{ inputs.failed && '--failed' || '' }}
+          LINKS: ${{ inputs.links }}
+        run: uv run d3soccer probe $URLS $FAILED ${LINKS:+--links "$LINKS"}

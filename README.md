@@ -34,6 +34,9 @@ Two GitHub Actions workflows in `.github/workflows/`:
   new snapshots to `main`, then redeploys the site. Run it by hand from the
   **Actions** tab → **Refresh data** → **Run workflow**. Each run's page lists any
   fetches that failed; those teams keep their previous data instead of going blank.
+- **Probe sites** (`probe.yml`, run by hand) fetches the pages a refresh failed on and
+  logs their markup (platform, tables, which parser selectors match), for fixing
+  scrapers against the real HTML. Same as `d3soccer probe --failed` locally.
 - **Deploy site** (`pages.yml`) builds `app_data.js` and publishes `web/` to GitHub
   Pages on every push to `main`.
 
@@ -48,6 +51,7 @@ uv run d3soccer scrape conferences            # all conferences; or e.g. `confer
 uv run d3soccer scrape all
 uv run d3soccer build                         # regenerate web/app_data.js from data/snapshots
 uv run d3soccer serve                         # http://127.0.0.1:8000
+uv run d3soccer probe --failed                # describe pages the last refresh failed on
 uv run pytest
 uv run ruff check . && uv run ruff format .
 ```
