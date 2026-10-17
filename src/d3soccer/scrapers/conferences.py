@@ -19,7 +19,7 @@ import re
 import requests
 from bs4 import BeautifulSoup
 
-from models import Team, StandingRow
+from d3soccer.models import Team, StandingRow
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; D3SoccerAppBot/0.1; contact: elijahredelman@gmail.com)"

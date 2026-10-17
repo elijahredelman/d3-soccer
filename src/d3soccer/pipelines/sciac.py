@@ -5,8 +5,8 @@ everything to data/sciac_snapshot_<date>.json.
 
 Run this from a real host with normal outbound network access:
 
-    pip install -r requirements.txt
-    python run_sciac_pilot.py
+    uv sync
+    uv run d3soccer scrape sciac
 
 This will fail as written the first time against any given school's site,
 because the Sidearm HTML parsers in scrapers/sidearm.py are first-pass and
@@ -22,8 +22,9 @@ import dataclasses
 import json
 from datetime import date
 
-from scrapers import sciac, ncaa_national
-from scrapers.sidearm import fetch_roster, fetch_schedule, fetch_stats
+from d3soccer.config import SNAPSHOT_DIR
+from d3soccer.scrapers import sciac, ncaa_national
+from d3soccer.scrapers.sidearm import fetch_roster, fetch_schedule, fetch_stats
 
 
 def run():
@@ -73,7 +74,7 @@ def run():
     except Exception as e:
         print(f"  USC poll failed: {e}")
 
-    out_path = f"data/sciac_snapshot_{snapshot['generated']}.json"
+    out_path = SNAPSHOT_DIR / f"sciac_snapshot_{snapshot['generated']}.json"
     with open(out_path, "w") as f:
         json.dump(snapshot, f, indent=2)
     print(f"Wrote {out_path}")

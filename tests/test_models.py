@@ -1,18 +1,24 @@
-from datetime import date
+from dataclasses import asdict
 
-from d3soccer.models import Game, Gender
-
-
-def make_game(home_goals, away_goals):
-    return Game(2025, Gender.MEN, date(2025, 9, 1), "Amherst", "Williams", home_goals, away_goals)
+from d3soccer.models import Game, Player
 
 
-def test_winner():
-    assert make_game(2, 1).winner == "Amherst"
-    assert make_game(0, 3).winner == "Williams"
+def test_player_optional_stats_default_to_none():
+    p = Player(team="Occidental", number="00", name="Casey Scott", position="GK", class_year="Sr.")
+    assert p.number == "00"
+    assert p.goals is None and p.saves is None
 
 
-def test_draw_and_unplayed_have_no_winner():
-    assert make_game(1, 1).winner is None
-    assert make_game(None, None).winner is None
-    assert not make_game(None, None).played
+def test_game_serializes_to_snapshot_shape():
+    g = Game(team="Occidental", date="2026-09-01", opponent="Caltech", location="home")
+    assert asdict(g) == {
+        "team": "Occidental",
+        "date": "2026-09-01",
+        "opponent": "Caltech",
+        "location": "home",
+        "conference_game": False,
+        "result": None,
+        "watch_provider": None,
+        "venue": None,
+        "time": None,
+    }

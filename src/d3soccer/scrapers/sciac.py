@@ -12,7 +12,7 @@ import re
 import requests
 from bs4 import BeautifulSoup
 
-from models import Team, StandingRow
+from d3soccer.models import Team, StandingRow
 
 CONFERENCE_NAME = "SCIAC"
 

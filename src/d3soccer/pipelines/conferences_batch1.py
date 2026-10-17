@@ -1,14 +1,14 @@
 """
 Pulls a full snapshot for the "most competitive/watched" batch of D3 men's
 soccer conferences: NESCAC, UAA, MIAC, WIAC, Northwest Conference. Same
-shape and same run instructions as run_sciac_pilot.py -- this is the
+shape and same run instructions as pipelines/sciac.py -- this is the
 second pass, expanding the same proven Sidearm-based pattern to new
 conferences instead of writing new scraper code per conference.
 
 Run this from a real host with normal outbound network access:
 
-    pip install -r requirements.txt
-    python run_conferences_pilot.py
+    uv sync
+    uv run d3soccer scrape batch1
 
 A handful of schools are known in advance to deviate from the standard
 Sidearm URL pattern (see scrapers/conferences.py quirk notes: Carnegie
@@ -23,8 +23,9 @@ import dataclasses
 import json
 from datetime import date
 
-from scrapers import conferences, ncaa_national
-from scrapers.sidearm import fetch_roster, fetch_schedule, fetch_stats
+from d3soccer.config import SNAPSHOT_DIR
+from d3soccer.scrapers import conferences, ncaa_national
+from d3soccer.scrapers.sidearm import fetch_roster, fetch_schedule, fetch_stats
 
 CONFERENCE_KEYS = ["NESCAC", "UAA", "MIAC", "WIAC", "Northwest Conference"]
 
@@ -75,7 +76,7 @@ def run():
     except Exception as e:
         print(f"  scoreboard failed: {e}")
 
-    out_path = f"data/conferences_snapshot_{snapshot['generated']}.json"
+    out_path = SNAPSHOT_DIR / f"conferences_snapshot_{snapshot['generated']}.json"
     with open(out_path, "w") as f:
         json.dump(snapshot, f, indent=2)
     print(f"Wrote {out_path}")

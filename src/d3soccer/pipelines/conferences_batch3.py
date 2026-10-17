@@ -5,8 +5,8 @@ conferences / ~344 teams total across all three pilot scripts + SCIAC).
 
 Run this from a real host with normal outbound network access:
 
-    pip install -r requirements.txt
-    python3 run_conferences_pilot3.py
+    uv sync
+    uv run d3soccer scrape batch3
 
 This is the biggest and messiest batch -- several conference home pages
 themselves (not just individual schools) are known to block automated
@@ -35,8 +35,9 @@ import dataclasses
 import json
 from datetime import date
 
-from scrapers import conferences
-from scrapers.sidearm import fetch_roster, fetch_schedule, fetch_stats
+from d3soccer.config import SNAPSHOT_DIR
+from d3soccer.scrapers import conferences
+from d3soccer.scrapers.sidearm import fetch_roster, fetch_schedule, fetch_stats
 
 CONFERENCE_KEYS = [
     "LEC", "NAC", "MASCAC", "Skyline", "SUNYAC", "GNAC",
@@ -83,7 +84,7 @@ def run():
 
         snapshot["conferences"][conf_key] = conf_data
 
-    out_path = f"data/conferences3_snapshot_{snapshot['generated']}.json"
+    out_path = SNAPSHOT_DIR / f"conferences3_snapshot_{snapshot['generated']}.json"
     with open(out_path, "w") as f:
         json.dump(snapshot, f, indent=2)
     print(f"Wrote {out_path}")

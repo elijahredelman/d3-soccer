@@ -45,28 +45,31 @@ Claremont-Mudd-Scripps) on 2026-09-18:
 
 ## Layout
 
-- `models.py` — shared data shapes (Team, Player, Game, StandingRow)
-- `scrapers/sidearm.py` — generic scraper for any Sidearm-template team site
-  (roster / schedule / stats), reusable across schools and, eventually,
-  across conferences
-- `scrapers/sciac.py` — SCIAC team registry (the 10 domains) + conference
+Paths are relative to the repo root.
+
+- `src/d3soccer/models.py` — shared data shapes (Team, Player, Game, StandingRow)
+- `src/d3soccer/scrapers/sidearm.py` — generic scraper for any Sidearm-template team site
+  (roster / schedule / stats), reusable across schools and conferences
+- `src/d3soccer/scrapers/sciac.py` — SCIAC team registry (the 10 domains) + conference
   standings scraper
-- `scrapers/ncaa_national.py` — national stat leaders, live scores, and the
-  United Soccer Coaches D3 poll (all already confirmed working)
-- `run_sciac_pilot.py` — orchestrates a full pull for SCIAC and writes JSON
-  to `data/`
-- `data/sciac_snapshot_2026-09-18.json` — a real snapshot, hand-verified
-  against live pages during this session (standings for all 10 teams, full
-  Occidental roster/schedule/stats, partial rosters for Chapman and
-  Pomona-Pitzer)
+- `src/d3soccer/scrapers/conferences.py` — team registries and standings for the other
+  conferences
+- `src/d3soccer/scrapers/ncaa_national.py` — national stat leaders, live scores, and the
+  United Soccer Coaches D3 poll
+- `src/d3soccer/pipelines/` — one pull job per batch (`sciac`, `conferences_batch1-3`,
+  `leaders`), each writing a dated JSON file to `data/snapshots/`, plus `app_data.py`,
+  which turns the latest snapshots into `web/app_data.js`
+- `data/snapshots/` — real snapshots, committed so the site builds without a live pull
 
 ## Running it for real
 
-1. Deploy this to any host with normal outbound internet (a small VPS,
-   Vercel/Render/Fly, etc.) — not this sandbox.
-2. `pip install -r requirements.txt`
+1. Run on any host with normal outbound internet (a small VPS, a CI runner, etc.).
+2. `uv sync`
 3. Fetch one live page (`curl https://oxyathletics.com/sports/mens-soccer/roster`)
    and compare its actual HTML to the selectors in `sidearm.py`; adjust.
-4. `python run_sciac_pilot.py` to pull everything and write `data/*.json`.
-5. Once this is solid for SCIAC, add conferences one at a time by adding
-   entries to a `CONFERENCES` registry modeled on `sciac.py`.
+4. `uv run d3soccer scrape sciac` (or `batch1`, `batch2`, `batch3`, `leaders`, `all`)
+   to pull and write `data/snapshots/*.json`.
+5. `uv run d3soccer build` to regenerate `web/app_data.js`, then
+   `uv run d3soccer serve` to view the site.
+6. Add conferences one at a time by adding entries to the `CONFERENCES` registry in
+   `conferences.py`.

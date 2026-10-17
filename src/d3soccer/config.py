@@ -1,13 +1,8 @@
-"""Project-wide paths and settings."""
+"""Project-wide paths, resolved from the repo root so commands work from any directory."""
 
 from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-DATA_DIR = PROJECT_ROOT / "data"
-RAW_DIR = DATA_DIR / "raw"
-PROCESSED_DIR = DATA_DIR / "processed"
-DB_PATH = DATA_DIR / "d3soccer.db"
-
-# Be polite to the sites we scrape.
-REQUEST_DELAY_SECONDS = 1.0
-USER_AGENT = "d3soccer/0.1 (+https://github.com/elijahredelman/d3-soccer)"
+SNAPSHOT_DIR = PROJECT_ROOT / "data" / "snapshots"
+WEB_DIR = PROJECT_ROOT / "web"
+APP_DATA_JS = WEB_DIR / "app_data.js"

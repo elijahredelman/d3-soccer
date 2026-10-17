@@ -1,12 +1,12 @@
 """
 Batch 2: pulls a full snapshot for 7 more D3 men's soccer conferences --
 Liberty League, Centennial, Empire 8, OAC, NCAC, NJAC, NEWMAC. Same shape
-as run_conferences_pilot.py (batch 1: NESCAC/UAA/MIAC/WIAC/Northwest).
+as pipelines/conferences_batch1.py (batch 1: NESCAC/UAA/MIAC/WIAC/Northwest).
 
 Run this from a real host with normal outbound network access:
 
-    pip install -r requirements.txt
-    python run_conferences_pilot2.py
+    uv sync
+    uv run d3soccer scrape batch2
 
 Schools already flagged as likely to fail on this first run (known URL-
 pattern deviations or fetch-blocking found during research -- see
@@ -27,8 +27,9 @@ import dataclasses
 import json
 from datetime import date
 
-from scrapers import conferences
-from scrapers.sidearm import fetch_roster, fetch_schedule, fetch_stats
+from d3soccer.config import SNAPSHOT_DIR
+from d3soccer.scrapers import conferences
+from d3soccer.scrapers.sidearm import fetch_roster, fetch_schedule, fetch_stats
 
 CONFERENCE_KEYS = [
     "Liberty League",
@@ -77,7 +78,7 @@ def run():
 
         snapshot["conferences"][conf_key] = conf_data
 
-    out_path = f"data/conferences2_snapshot_{snapshot['generated']}.json"
+    out_path = SNAPSHOT_DIR / f"conferences2_snapshot_{snapshot['generated']}.json"
     with open(out_path, "w") as f:
         json.dump(snapshot, f, indent=2)
     print(f"Wrote {out_path}")

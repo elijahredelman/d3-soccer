@@ -41,7 +41,7 @@ from typing import Optional
 import requests
 from bs4 import BeautifulSoup
 
-from models import Player, Game
+from d3soccer.models import Player, Game
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; D3SoccerAppBot/0.1; contact: elijahredelman@gmail.com)"

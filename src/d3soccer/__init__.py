@@ -1,3 +1,3 @@
-"""Tools for collecting and analyzing NCAA Division III soccer data."""
+"""Data pipeline for Pitch Sheet, a NCAA Division III men's soccer site."""
 
 __version__ = "0.1.0"

@@ -21,6 +21,8 @@ import json
 import os
 import re
 
+from d3soccer.config import APP_DATA_JS, SNAPSHOT_DIR
+
 DISPLAY_ORDER = [
     "SCIAC", "NESCAC", "UAA", "MIAC", "WIAC", "Northwest Conference",
     "Liberty League", "Centennial", "Empire 8", "OAC", "NCAC", "NJAC", "NEWMAC",
@@ -56,7 +58,7 @@ def load_all():
     standings_by_conf = {}
     sites = {}
 
-    sciac_path = _latest("data/sciac_snapshot_*.json")
+    sciac_path = _latest(str(SNAPSHOT_DIR / "sciac_snapshot_*.json"))
     if sciac_path:
         print(f"Loading {sciac_path}")
         sciac = json.load(open(sciac_path))
@@ -69,8 +71,8 @@ def load_all():
     # "conferences2_snapshot" / "conferences3_snapshot" -- glob each
     # family separately so a newer batch-1 re-run doesn't get shadowed by
     # batch 2/3 files matching the same loose pattern.
-    for family in ("data/conferences_snapshot_*.json", "data/conferences2_snapshot_*.json", "data/conferences3_snapshot_*.json"):
-        path = _latest(family)
+    for family in ("conferences_snapshot_*.json", "conferences2_snapshot_*.json", "conferences3_snapshot_*.json"):
+        path = _latest(str(SNAPSHOT_DIR / family))
         if not path:
             continue
         print(f"Loading {path}")
@@ -85,7 +87,7 @@ def load_all():
 
 
 def load_leaders():
-    path = _latest("data/leaders_snapshot_*.json")
+    path = _latest(str(SNAPSHOT_DIR / "leaders_snapshot_*.json"))
     if not path:
         return {}, {}
     print(f"Loading {path}")
@@ -172,8 +174,8 @@ def run():
     ordered_confs = [c for c in DISPLAY_ORDER if c in present]
     ordered_confs += sorted(present - set(ordered_confs))
 
-    with open("app_data.js", "w") as f:
-        f.write("// Auto-generated from real scraped data -- see build_app_data.py\n")
+    with open(APP_DATA_JS, "w") as f:
+        f.write("// Auto-generated from real scraped data -- see src/d3soccer/pipelines/app_data.py (`d3soccer build`)\n")
         f.write("const REAL_ROSTERS = " + json.dumps(rosters, separators=(",", ":")) + ";\n")
         f.write("const REAL_SCHEDULES = " + json.dumps(schedules, separators=(",", ":")) + ";\n")
         f.write("const REAL_STATS = " + json.dumps(stats, separators=(",", ":")) + ";\n")
@@ -185,7 +187,7 @@ def run():
 
     print(f"{len(rosters)} rosters, {len(schedules)} schedules, {len(stats)} team-stat sets")
     print(f"{len(standings)} conferences with standings, {sum(len(v) for v in standings.values())} standings rows total")
-    print("file size:", os.path.getsize("app_data.js"), "bytes")
+    print("file size:", os.path.getsize(APP_DATA_JS), "bytes")
 
 
 if __name__ == "__main__":

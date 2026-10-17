@@ -8,12 +8,13 @@ Pulls:
   - team leaders: team goals/gm, total goals, total assists, team assists/gm
   - NPI rankings (once the NCAA starts publishing them for the season)
 
-    python3 run_more_leaders.py
+    uv run d3soccer scrape leaders
 """
 from __future__ import annotations
 import json
 from datetime import date
-from scrapers import ncaa_national
+from d3soccer.config import SNAPSHOT_DIR
+from d3soccer.scrapers import ncaa_national
 
 def run():
     out = {"generated": date.today().isoformat(), "leaders": {}, "team_leaders": {}, "npi_rankings": None}
@@ -43,7 +44,7 @@ def run():
     except Exception as e:
         print(f"  NPI rankings failed: {e}")
 
-    out_path = f"data/leaders_snapshot_{out['generated']}.json"
+    out_path = SNAPSHOT_DIR / f"leaders_snapshot_{out['generated']}.json"
     with open(out_path, "w") as f:
         json.dump(out, f, indent=2)
     print(f"Wrote {out_path}")

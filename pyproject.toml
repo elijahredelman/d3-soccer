@@ -1,13 +1,13 @@
 [project]
 name = "d3soccer"
 version = "0.1.0"
-description = "Collect and analyze NCAA Division III soccer data."
+description = "Data pipeline for Pitch Sheet, a NCAA Division III men's soccer site."
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "beautifulsoup4>=4.12",
-    "httpx>=0.27",
-    "pandas>=2.2",
+    "lxml>=5.0",
+    "requests>=2.31",
 ]
 
 [project.scripts]
