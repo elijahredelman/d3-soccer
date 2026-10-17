@@ -1,0 +1,799 @@
+<title>Pitch Sheet</title>
+<style>
+:root{
+  --ink:#0f1a14; --paper:#f4f1e8; --line:#d9d3c3;
+  --pitch:#1c3d2e; --pitch-2:#254f3b; --turf:#e8e4d6;
+  --gold:#c99a3a; --gold-ink:#5c4318;
+  --card:#ffffff; --muted:#6b6559; --danger:#a4372b; --live:#c9432f;
+  --shadow: 0 1px 2px rgba(15,26,20,.06), 0 8px 24px -12px rgba(15,26,20,.18);
+  --radius: 14px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --ink:#eee8d8; --paper:#111813; --line:#2a352c;
+    --pitch:#173226; --pitch-2:#1f4634; --turf:#17231b;
+    --card:#161f18; --muted:#9a927e; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#eee8d8; --paper:#111813; --line:#2a352c;
+  --pitch:#173226; --pitch-2:#1f4634; --turf:#17231b;
+  --card:#161f18; --muted:#9a927e; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family: 'Inter Tight', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  padding-bottom: calc(64px + env(safe-area-inset-bottom,0px));
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3{ font-family:'Fraunces', Georgia, 'Times New Roman', serif; margin:0; letter-spacing:-.01em;}
+.tab-panel h2{ font-size:1.5rem; font-weight:600; }
+.num{ font-variant-numeric: tabular-nums; }
+a{ color:inherit; text-decoration:none; }
+
+/* ---- top bar ---- */
+.topbar{
+  position:sticky; top:0; z-index:20;
+  padding: calc(14px + env(safe-area-inset-top,0px)) 16px 12px;
+  background: var(--pitch); color:#f4f1e8;
+  display:flex; align-items:center; justify-content:space-between;
+  box-shadow: var(--shadow);
+}
+.topbar .brand{ display:flex; align-items:center; gap:9px; }
+.brand .mark{
+  width:26px;height:26px;border-radius:7px;
+  background: conic-gradient(from 220deg, var(--gold), #e7c877 40%, var(--gold) 75%);
+  display:grid; place-items:center; font-family:'Fraunces',serif; font-weight:700; font-size:.8rem; color:var(--gold-ink);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.15);
+}
+.brand .word{ font-family:'Fraunces',serif; font-weight:600; font-size:1.08rem; }
+.brand .word small{ display:block; font-family:inherit; font-size:.62rem; font-weight:500; letter-spacing:.09em; text-transform:uppercase; opacity:.7; margin-top:-2px;}
+.gear{ width:34px;height:34px;border-radius:50%; display:grid; place-items:center; background:rgba(244,241,232,.1); font-size:.85rem; }
+
+/* ---- generic layout ---- */
+.wrap{ padding: 16px 16px 8px; max-width:640px; margin:0 auto; }
+.section-label{
+  font-size:.68rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted);
+  margin: 22px 2px 10px;
+}
+.section-label:first-child{ margin-top:4px; }
+.card{
+  background:var(--card); border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow: var(--shadow);
+}
+.sample-note{
+  font-size:.72rem; color:var(--muted); background:transparent; border:1px dashed var(--line);
+  border-radius:10px; padding:8px 10px; margin:10px 2px 0; line-height:1.4;
+}
+
+/* ---- live strip ---- */
+.live-strip{ display:flex; gap:10px; overflow-x:auto; padding: 2px 2px 6px; margin: 0 -2px; scrollbar-width:none; }
+.live-strip::-webkit-scrollbar{ display:none; }
+.live-card{
+  flex: 0 0 auto; width:168px; background:var(--card); border:1px solid var(--line);
+  border-radius:12px; padding:10px 12px; box-shadow:var(--shadow);
+}
+.live-card .status{ font-size:.62rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; display:flex; align-items:center; gap:5px;}
+.live-card .status.is-live{ color:var(--live); }
+.live-card .status.is-live .dot{ width:6px;height:6px;border-radius:50%; background:var(--live); animation:pulse 1.4s infinite; }
+.live-card .status.is-final{ color:var(--muted); }
+.live-card .status.is-pre{ color:var(--muted); }
+@keyframes pulse{ 0%,100%{opacity:1} 50%{opacity:.25} }
+.live-card .matchup{ margin-top:8px; display:flex; flex-direction:column; gap:5px; }
+.live-card .team-row{ display:flex; justify-content:space-between; align-items:center; font-size:.86rem; }
+.live-card .team-row .nm{ font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:110px;}
+.live-card .team-row .sc{ font-weight:700; }
+
+/* ---- rank / stat list rows ---- */
+.list-row{
+  display:flex; align-items:center; gap:12px; padding:12px 14px;
+  border-bottom:1px solid var(--line);
+}
+.list-row:last-child{ border-bottom:none; }
+.rank-badge{
+  width:26px; height:26px; border-radius:7px; background:var(--turf); color:var(--muted);
+  display:grid; place-items:center; font-weight:700; font-size:.78rem; flex:0 0 auto;
+}
+.list-row.top .rank-badge{ background:var(--gold); color:var(--gold-ink); }
+.row-main{ flex:1; min-width:0; }
+.row-main .primary{ font-weight:600; font-size:.92rem; display:flex; align-items:center; gap:6px; }
+.row-main .secondary{ font-size:.76rem; color:var(--muted); margin-top:1px; }
+.row-trail{ text-align:right; flex:0 0 auto; }
+.row-trail .figure{ font-weight:700; font-size:1rem; }
+.row-trail .figlabel{ font-size:.64rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+.trend{ font-size:.7rem; padding:2px 6px; border-radius:20px; font-weight:700; }
+.trend.up{ background:#d9ead9; color:#2f6b2f; }
+.trend.down{ background:#f1d9d6; color:var(--danger); }
+:root:not([data-theme="light"]) .trend.up, :root[data-theme="dark"] .trend.up{ background:#19301c; color:#8fd39a; }
+:root:not([data-theme="light"]) .trend.down, :root[data-theme="dark"] .trend.down{ background:#341c19; color:#e5988c; }
+
+/* ---- pill tabs (segmented) ---- */
+.seg{ display:flex; gap:6px; overflow-x:auto; padding:2px; scrollbar-width:none; }
+.seg::-webkit-scrollbar{display:none;}
+.seg button{
+  flex:0 0 auto; border:1px solid var(--line); background:var(--card); color:var(--ink);
+  padding:7px 13px; border-radius:20px; font-size:.8rem; font-weight:600; font-family:inherit; cursor:pointer;
+}
+.seg button.active{ background:var(--pitch); color:#f4f1e8; border-color:var(--pitch); }
+
+/* ---- team header ---- */
+.team-hero{
+  background: linear-gradient(155deg, var(--pitch), var(--pitch-2));
+  color:#f4f1e8; border-radius:var(--radius); padding:18px; box-shadow:var(--shadow);
+  display:flex; align-items:center; gap:14px;
+}
+.team-hero .crest{
+  width:52px;height:52px;border-radius:12px; background:rgba(244,241,232,.14);
+  display:grid; place-items:center; font-family:'Fraunces',serif; font-weight:700; font-size:1.1rem;
+}
+.team-hero .meta{ font-size:.78rem; opacity:.8; margin-top:3px; }
+.team-hero .record{ margin-left:auto; text-align:right; }
+.team-hero .record .figure{ font-family:'Fraunces',serif; font-size:1.3rem; font-weight:600; }
+.team-hero .record .figlabel{ font-size:.62rem; opacity:.75; text-transform:uppercase; letter-spacing:.06em; }
+
+.watch-chip{
+  display:inline-flex; align-items:center; gap:5px; font-size:.72rem; font-weight:600;
+  background:var(--turf); border:1px solid var(--line); color:var(--ink);
+  padding:4px 9px; border-radius:20px;
+}
+.watch-chip .dot{ width:5px;height:5px;border-radius:50%; background:var(--gold); }
+
+.roster-row{ display:flex; align-items:center; gap:12px; padding:11px 14px; border-bottom:1px solid var(--line); }
+.roster-row:last-child{ border-bottom:none; }
+.jersey{
+  width:30px;height:30px;border-radius:50%; background:var(--turf); color:var(--muted);
+  display:grid; place-items:center; font-weight:700; font-size:.72rem; flex:0 0 auto;
+}
+.roster-row .pos{
+  font-size:.62rem; font-weight:700; text-transform:uppercase; color:var(--gold-ink);
+  background: color-mix(in srgb, var(--gold) 22%, transparent); padding:2px 6px; border-radius:5px;
+}
+:root:not([data-theme="light"]) .roster-row .pos, :root[data-theme="dark"] .roster-row .pos{ color:#e7c877; }
+
+.empty-hint{ padding:22px 14px; text-align:center; color:var(--muted); font-size:.85rem; }
+
+/* ---- bottom tab bar ---- */
+.tabbar{
+  position:fixed; left:0; right:0; bottom:0; z-index:30;
+  background:var(--card); border-top:1px solid var(--line);
+  display:flex; padding: 6px 4px calc(6px + env(safe-area-inset-bottom,0px));
+  box-shadow: 0 -6px 18px -10px rgba(0,0,0,.25);
+}
+.tabbar button{
+  flex:1; background:none; border:none; font-family:inherit; color:var(--muted);
+  display:flex; flex-direction:column; align-items:center; gap:3px; padding:6px 2px; cursor:pointer;
+  font-size:.62rem; font-weight:700; letter-spacing:.02em;
+}
+.tabbar button .ic{ font-size:1.05rem; }
+.tabbar button.active{ color:var(--pitch); }
+:root:not([data-theme="light"]) .tabbar button.active, :root[data-theme="dark"] .tabbar button.active{ color:#8fd39a; }
+
+.tab-panel{ display:none; animation: fade .2s ease; }
+.tab-panel.active{ display:block; }
+@keyframes fade{ from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none} }
+
+.search-row{
+  display:flex; gap:8px; align-items:center; background:var(--card); border:1px solid var(--line);
+  border-radius:12px; padding:9px 12px; box-shadow: var(--shadow);
+}
+.search-row input{
+  border:none; outline:none; background:none; color:var(--ink); font-family:inherit; font-size:.88rem; flex:1;
+}
+.search-row input::placeholder{ color:var(--muted); }
+
+/* ---- crest badge (initials, colored) ---- */
+.crest-badge{
+  width:34px;height:34px;border-radius:9px; flex:0 0 auto;
+  display:grid; place-items:center; font-weight:700; font-size:.74rem;
+  color:#f4f1e8; background: linear-gradient(155deg, var(--pitch), var(--pitch-2));
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.08);
+}
+.crest-badge.sm{ width:26px;height:26px;border-radius:7px;font-size:.62rem; }
+
+/* ---- venue / meta line ---- */
+.meta-line{ display:flex; align-items:center; gap:5px; flex-wrap:wrap; font-size:.72rem; color:var(--muted); }
+.meta-line .sep{ opacity:.5; }
+.pin{ font-size:.68rem; }
+
+/* ---- richer live/score card ---- */
+.live-card{ width:186px; }
+.live-card .conf-tag{
+  font-size:.6rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+  color:var(--muted); background:var(--turf); padding:2px 6px; border-radius:5px; margin-left:auto;
+}
+.live-card .status-row{ display:flex; align-items:center; }
+.live-card .venue{ font-size:.66rem; color:var(--muted); margin-top:7px; display:flex; align-items:center; gap:3px; }
+
+/* ---- watch / link pill (real anchor) ---- */
+.watch-link{
+  display:inline-flex; align-items:center; gap:5px; font-size:.72rem; font-weight:600;
+  background:var(--pitch); color:#f4f1e8; border:1px solid var(--pitch);
+  padding:5px 10px; border-radius:20px; white-space:nowrap;
+}
+.watch-link .arrow{ font-size:.7rem; opacity:.85; }
+.watch-link.ghost{
+  background:var(--turf); color:var(--ink); border:1px solid var(--line);
+}
+
+/* ---- standings table (grid, not list) ---- */
+.standings-table{ width:100%; border-collapse:collapse; font-size:.82rem; }
+.standings-table thead th{
+  text-align:right; font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em;
+  color:var(--muted); padding:9px 10px; border-bottom:1px solid var(--line);
+}
+.standings-table thead th:first-child, .standings-table td.team-cell{ text-align:left; }
+.standings-table thead th:nth-child(2){ text-align:left; padding-left:6px; }
+.standings-table tbody tr{ border-bottom:1px solid var(--line); }
+.standings-table tbody tr:last-child{ border-bottom:none; }
+.standings-table tbody tr.top{ background: color-mix(in srgb, var(--gold) 8%, transparent); }
+.standings-table td{ padding:9px 10px; }
+.standings-table td.rank-cell{ width:22px; font-weight:700; color:var(--muted); text-align:center; }
+.standings-table td.team-cell{ font-weight:600; display:flex; align-items:center; gap:8px; cursor:pointer; padding-left:6px;}
+.standings-table td.num-cell{ text-align:right; font-variant-numeric:tabular-nums; }
+.standings-table td.num-cell.strong{ font-weight:700; }
+.standings-scroll{ overflow-x:auto; }
+
+/* ---- rank movement chip ---- */
+.move-chip{ font-size:.66rem; font-weight:700; padding:1px 5px; border-radius:5px; }
+.move-chip.new{ background: color-mix(in srgb, var(--gold) 22%, transparent); color:var(--gold-ink); }
+:root:not([data-theme="light"]) .move-chip.new, :root[data-theme="dark"] .move-chip.new{ color:#e7c877; }
+
+/* ---- stat category buttons: disabled/coming-soon ---- */
+.seg button:disabled{ opacity:.4; cursor:default; }
+
+/* ---- teaser card (home panel links into a tab) ---- */
+.teaser-row{
+  display:flex; align-items:center; justify-content:space-between; padding:12px 14px;
+  cursor:pointer;
+}
+.teaser-row .go{ color:var(--muted); font-size:.9rem; }
+</style>
+
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter+Tight:wght@400;500;600;700&display=swap">
+
+<div class="topbar">
+  <div class="brand">
+    <div class="mark">D3</div>
+    <div class="word">Pitch Sheet<small>Division III Men's Soccer</small></div>
+  </div>
+  <div class="gear">⚙</div>
+</div>
+
+<div class="wrap">
+
+  <!-- ============ HOME ============ -->
+  <div class="tab-panel active" id="panel-home">
+    <div class="section-label" id="liveStripLabel">Live &amp; today</div>
+    <div class="live-strip" id="liveStrip"></div>
+
+    <div class="section-label">SCIAC standings</div>
+    <div class="card" id="homeStandings"></div>
+    <div class="card teaser-row" style="margin-top:8px; cursor:pointer;" onclick="showTab('rankings')">
+      <span style="font-weight:600;font-size:.86rem;">Full standings, USC Top 25 &amp; NPI</span>
+      <span class="go">→</span>
+    </div>
+
+    <div class="section-label">National individual leaders <span style="opacity:.6;font-weight:500;text-transform:none;letter-spacing:0;">— save %</span></div>
+    <div class="card" id="homeLeaders"></div>
+    <div class="sample-note" id="homeLeadersNote">Pulled live from the NCAA stats feed.</div>
+
+    <div class="section-label">Your teams</div>
+    <div class="card" id="followedTeams"></div>
+  </div>
+
+  <!-- ============ TEAMS ============ -->
+  <div class="tab-panel" id="panel-teams">
+    <div class="search-row">
+      <span>🔍</span>
+      <input placeholder="Search 400+ teams, e.g. “Middlebury”" />
+    </div>
+    <div class="section-label">Conferences</div>
+    <div class="seg" id="confSeg"></div>
+    <div class="section-label" id="teamListLabel">NESCAC</div>
+    <div class="card" id="teamList"></div>
+  </div>
+
+  <!-- ============ TEAM DETAIL ============ -->
+  <div class="tab-panel" id="panel-team">
+    <div class="team-hero" id="teamHero"></div>
+
+    <div class="section-label" style="margin-top:18px;" id="teamStatsLabel">Team leaders</div>
+    <div class="card" id="teamStats"></div>
+
+    <div class="section-label">Schedule</div>
+    <div class="card" id="teamSchedule"></div>
+
+    <div class="section-label">Roster <span id="rosterCount" style="opacity:.6;font-weight:500;text-transform:none;letter-spacing:0;"></span></div>
+    <div class="card" id="teamRoster"></div>
+    <div class="sample-note" id="teamNote"></div>
+  </div>
+
+  <!-- ============ RANKINGS ============ -->
+  <div class="tab-panel" id="panel-rankings">
+    <div class="seg" id="rankSeg">
+      <button data-rank="uc" class="active">United Soccer Coaches</button>
+      <button data-rank="npi">NPI</button>
+      <button data-rank="standings">Conference standings</button>
+    </div>
+    <div class="seg" id="standingsConfSeg" hidden></div>
+    <div class="section-label" id="rankLabel">United Soccer Coaches D3 Top 25</div>
+    <div class="card" id="rankList"></div>
+    <div class="sample-note" id="rankNote"></div>
+  </div>
+
+  <!-- ============ STATS ============ -->
+  <div class="tab-panel" id="panel-stats">
+    <div class="seg" id="statGroupSeg"></div>
+    <div class="seg" id="statSeg"></div>
+    <div class="section-label" id="statLabel">Save percentage</div>
+    <div class="card" id="statList"></div>
+    <div class="sample-note" id="statNote">Pulled live from the NCAA national stats feed.</div>
+  </div>
+
+</div>
+
+<div class="tabbar">
+  <button class="active" data-tab="home"><span class="ic">⌂</span>Home</button>
+  <button data-tab="teams"><span class="ic">▦</span>Teams</button>
+  <button data-tab="rankings"><span class="ic">☰</span>Rankings</button>
+  <button data-tab="stats"><span class="ic">◔</span>Leaders</button>
+</div>
+
+<script src="app_data.js"></script>
+<script>
+/* ============================================================
+   DATA — last regenerated from real scraper snapshots, see app_data.js
+   - conferences / teams: built below from REAL_STANDINGS + REAL_SITES,
+     which cover all 41 D3 men's soccer conferences we've pulled so far
+     (see app_data.js header comment for the current roster/schedule/
+     stats/standings counts). Re-run build_app_data.py after any pilot
+     script to refresh.
+   - liveGames, saveLeaders, uscTop25: still a frozen sample from the
+     9/15-9/18 pulls — not yet wired to refresh automatically. Next up.
+   ============================================================ */
+
+const liveGames = [
+  {status:"final", home:"LeTourneau", away:"Sewanee", hs:0, as:4, conf:"SCAC"},
+  {status:"final", home:"Lyon", away:"Belhaven", hs:1, as:3, conf:"SLIAC"},
+  {status:"pre", time:"4:00 PM ET", home:"Bethany (WV)", away:"Westminster (PA)"},
+  {status:"pre", time:"4:00 PM ET", home:"JWU Charlotte", away:"William Peace"},
+  {status:"pre", time:"4:30 PM ET", home:"Rhodes", away:"East Tex. Baptist"},
+];
+// NOTE: pulled from the live NCAA scoreboard feed (ncaa-api.henrygd.me) —
+// the response's real top-level key is "games", not "data" (that was the
+// earlier scoreboard bug); scores/status above reflect that fix. Venue
+// isn't included in this feed, so it's left off live/today cards for now.
+
+// Real individual + team national stat leaders now come from REAL_LEADERS /
+// REAL_TEAM_LEADERS in app_data.js (pulled via run_more_leaders.py from the
+// live NCAA stats feed) — see renderStatList()/renderHomeLeaders() below.
+
+// Real, live standings for all 41 conferences — built from REAL_STANDINGS /
+// REAL_SITES / REAL_CONFERENCES in app_data.js, which are regenerated by
+// build_app_data.py from the latest scraper snapshots (SCIAC + batch 1/2/3
+// conference pulls). Re-running any pilot script and then build_app_data.py
+// refreshes this automatically — nothing below is hand-typed anymore.
+const conferences = REAL_CONFERENCES;
+
+const teams = {};
+for (const conf of REAL_CONFERENCES) {
+  const rows = REAL_STANDINGS[conf] || [];
+  teams[conf] = rows.map(s => ({
+    name: s.name,
+    rec: s.overallRec,
+    confRec: s.confRec,
+    site: REAL_SITES[s.name],
+  }));
+}
+
+// Real rosters, schedules, and team stats for all 53 teams whose pulls
+// succeeded (10/10 SCIAC + 43/45 across NESCAC/UAA/MIAC/WIAC/Northwest
+// Conference) — loaded from app_data.js, generated straight from the
+// run_sciac_pilot.py / run_conferences_pilot.py snapshots on 2026-09-18.
+// REAL_ROSTERS / REAL_SCHEDULES / REAL_STATS are defined in that file,
+// loaded via <script src="app_data.js"> before this script runs.
+const rosters = REAL_ROSTERS;
+const schedules = REAL_SCHEDULES;
+const teamStats = REAL_STATS;
+
+// Real, live — unitedsoccercoaches.org D3 Top 25, Poll 1, dated 2026-09-15
+const uscTop25 = [
+  {rank:1, team:"Wesleyan University", rec:"3-0-0"},
+  {rank:2, team:"St. Olaf College", rec:"6-0-0"},
+  {rank:3, team:"Case Western Reserve University", rec:"6-0-0"},
+  {rank:4, team:"Babson College", rec:"4-0-0"},
+  {rank:5, team:"Rowan University", rec:"4-0-0"},
+  {rank:6, team:"Middlebury College", rec:"3-0-0"},
+  {rank:7, team:"SUNY Cortland", rec:"4-0-0"},
+  {rank:8, team:"University of Chicago", rec:"4-1-0"},
+  {rank:9, team:"University of Scranton", rec:"3-0-1"},
+  {rank:10, team:"University of Lynchburg", rec:"4-1-0"},
+  {rank:11, team:"Williams College", rec:"3-0-0"},
+  {rank:12, team:"Claremont-Mudd-Scripps", rec:"3-1-1"},
+  {rank:13, team:"University of Mary Washington", rec:"4-0-0"},
+  {rank:14, team:"Hobart College", rec:"5-0-0"},
+  {rank:15, team:"Stevens Institute of Technology", rec:"3-0-1"},
+  {rank:16, team:"Catholic University", rec:"4-0-0"},
+  {rank:17, team:"Otterbein University", rec:"3-0-0"},
+  {rank:18, team:"Tufts University", rec:"2-1-0"},
+  {rank:19, team:"Wheaton College (Mass.)", rec:"3-0-2"},
+  {rank:20, team:"Saint John's University", rec:"6-0-0"},
+  {rank:21, team:"North Central College", rec:"5-0-1"},
+  {rank:22, team:"Redlands", rec:"2-1-0"},
+  {rank:23, team:"Washington & Lee University", rec:"4-1-0"},
+  {rank:24, team:"St. Lawrence University", rec:"3-0-1"},
+  {rank:25, team:"Messiah University", rec:"3-1-0"},
+];
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+
+function statusMarkup(g){
+  if(g.status==="live") return `<span class="status is-live"><span class="dot"></span>${g.clock}</span>`;
+  if(g.status==="final") return `<span class="status is-final">FINAL</span>`;
+  return `<span class="status is-pre">${g.time}</span>`;
+}
+function scoreOrDash(v){ return (v===undefined) ? "–" : v; }
+
+function renderLive(){
+  document.getElementById("liveStripLabel").textContent = "Live & today · sample from Sep 18 (not yet wired to refresh)";
+  document.getElementById("liveStrip").innerHTML = liveGames.map(g=>`
+    <div class="live-card">
+      <div class="status-row">
+        ${statusMarkup(g)}
+        ${g.conf ? `<span class="conf-tag">${g.conf}</span>` : ""}
+      </div>
+      <div class="matchup">
+        <div class="team-row"><span class="nm">${g.away}</span><span class="sc num">${scoreOrDash(g.as)}</span></div>
+        <div class="team-row"><span class="nm">${g.home}</span><span class="sc num">${scoreOrDash(g.hs)}</span></div>
+      </div>
+    </div>`).join("");
+}
+
+function renderHomeStandings(){
+  const top = (teams.SCIAC || []).slice(0,4).map(t => ({name:t.name, confRec:t.confRec, overallRec:t.rec}));
+  document.getElementById("homeStandings").innerHTML = `
+    <div class="standings-scroll"><table class="standings-table">
+      <thead><tr><th>#</th><th>Team</th><th>Conf</th><th>Overall</th></tr></thead>
+      <tbody>
+        ${top.map((t,i)=>`
+          <tr class="${i===0?'top':''}">
+            <td class="rank-cell">${i+1}</td>
+            <td class="team-cell" onclick="openTeam('${t.name}')"><span class="crest-badge sm">${t.name.slice(0,2).toUpperCase()}</span>${t.name}</td>
+            <td class="num-cell">${t.confRec}</td>
+            <td class="num-cell strong">${t.overallRec}</td>
+          </tr>`).join("")}
+      </tbody>
+    </table></div>`;
+}
+
+function renderHomeLeaders(){
+  const payload = REAL_LEADERS.save_pct;
+  const rows = (payload && payload.data) || [];
+  document.getElementById("homeLeadersNote").textContent = payload
+    ? "Real, live from the NCAA stats feed — " + payload.updated + "."
+    : "Save % leaders not yet pulled.";
+  document.getElementById("homeLeaders").innerHTML = rows.slice(0,4).map((p,i)=>`
+    <div class="list-row ${i===0?'top':''}">
+      <div class="crest-badge sm" style="background:${i===0?'linear-gradient(155deg,var(--gold),#e7c877)':'linear-gradient(155deg,var(--pitch),var(--pitch-2))'};color:${i===0?'var(--gold-ink)':'#f4f1e8'};">${p.Rank}</div>
+      <div class="row-main">
+        <div class="primary">${p.Name}</div>
+        <div class="secondary">${p.Team} · ${p.Cl}</div>
+      </div>
+      <div class="row-trail">
+        <div class="figure num">${p["Pct."]}</div>
+        <div class="figlabel">SV%</div>
+      </div>
+    </div>`).join("");
+}
+
+function renderFollowed(){
+  const sample = [(teams.SCIAC || []).find(t=>t.name==="Occidental")].filter(Boolean);
+  document.getElementById("followedTeams").innerHTML = sample.map(t=>`
+    <div class="list-row" style="cursor:pointer" onclick="openTeam('${t.name}')">
+      <div class="crest-badge">${t.name.slice(0,2).toUpperCase()}</div>
+      <div class="row-main">
+        <div class="primary">${t.name}</div>
+        <div class="secondary">SCIAC · ${t.rec} overall · ${t.confRec} conf.</div>
+      </div>
+      <div class="row-trail"><a class="watch-link" href="https://${t.site}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Site <span class="arrow">↗</span></a></div>
+    </div>`).join("");
+}
+
+function renderConfSeg(){
+  document.getElementById("confSeg").innerHTML = conferences.map((c,i)=>
+    `<button data-c="${c}" class="${i===0?'active':''}">${c}</button>`).join("");
+}
+
+function renderTeamList(conf){
+  document.getElementById("teamListLabel").textContent = conf;
+  document.getElementById("teamList").innerHTML = teams[conf].map(t=>`
+    <div class="list-row" style="cursor:pointer" onclick="openTeam('${t.name}')">
+      <div class="crest-badge">${t.name.slice(0,2).toUpperCase()}</div>
+      <div class="row-main">
+        <div class="primary">${t.name}</div>
+        <div class="secondary">${t.confRec ? t.rec+" overall · "+t.confRec+" conf." : (t.npi ? t.rec+" · NPI #"+t.npi : t.rec+" overall")}</div>
+      </div>
+      <div class="row-trail"><a class="watch-link ghost" href="https://${t.site}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Site <span class="arrow">↗</span></a></div>
+    </div>`).join("");
+}
+
+function findTeam(name){
+  for(const c of conferences){ const hit = teams[c].find(t=>t.name===name); if(hit) return {...hit, conf:c}; }
+  return null;
+}
+
+function openTeam(name){
+  const t = findTeam(name);
+  if(!t) return;
+  document.getElementById("teamHero").innerHTML = `
+    <div class="crest">${t.name.slice(0,2).toUpperCase()}</div>
+    <div>
+      <h2 style="color:#f4f1e8;">${t.name}</h2>
+      <div class="meta">${t.conf}${t.confRec ? " · "+t.confRec+" conf." : (t.npi ? " · NPI #"+t.npi : "")}</div>
+      <a class="watch-link" style="margin-top:8px;background:rgba(244,241,232,.14);border-color:transparent;" href="https://${t.site}" target="_blank" rel="noopener">Team site <span class="arrow">↗</span></a>
+    </div>
+    <div class="record"><div class="figure num">${t.rec}</div><div class="figlabel">Record</div></div>`;
+
+  // team leaders
+  const stats = teamStats[t.name];
+  document.getElementById("teamStatsLabel").hidden = !stats;
+  if(stats){
+    document.getElementById("teamStats").innerHTML =
+      stats.scorers.map(p=>`
+        <div class="list-row">
+          <div class="rank-badge" style="background:transparent;color:var(--muted);">${p.gp} GP</div>
+          <div class="row-main"><div class="primary">${p.name}</div><div class="secondary">${p.g}G ${p.a}A</div></div>
+          <div class="row-trail"><div class="figure num">${p.pts}</div><div class="figlabel">Pts</div></div>
+        </div>`).join("") +
+      stats.keepers.map(p=>`
+        <div class="list-row">
+          <div class="rank-badge" style="background:transparent;color:var(--muted);">GK</div>
+          <div class="row-main"><div class="primary">${p.name}</div><div class="secondary">${p.min} min · ${p.ga} GA · ${p.sv} SV</div></div>
+          <div class="row-trail"><div class="figure num">${p.pct}</div><div class="figlabel">SV%</div></div>
+        </div>`).join("");
+  } else {
+    document.getElementById("teamStats").innerHTML = "";
+  }
+
+  // schedule
+  const sched = schedules[t.name];
+  document.getElementById("teamSchedule").innerHTML = sched ? sched.map(g=>`
+    <div class="list-row">
+      <div class="rank-badge" style="background:transparent;color:var(--muted);font-weight:600;font-size:.68rem;">${g.d}</div>
+      <div class="row-main">
+        <div class="primary">${g.opp}</div>
+        <div class="meta-line">
+          <span>${g.where==='home'?'Home':'Away'}</span>
+          ${g.note?`<span class="sep">·</span><span>${g.note}</span>`:""}
+          ${g.time?`<span class="sep">·</span><span>${g.time}</span>`:""}
+          ${g.venue?`<span class="sep">·</span><span class="pin">📍</span><span>${g.venue}</span>`:""}
+        </div>
+      </div>
+      <div class="row-trail">${g.result ? `<span class="figure num" style="font-size:.85rem;">${g.result}</span>` : `<span class="watch-chip"><span class="dot"></span>Upcoming</span>`}</div>
+    </div>`).join("") : `<div class="empty-hint">Schedule not yet pulled for this team — only Occidental's is live so far.</div>`;
+
+  // roster
+  const rosterInfo = rosters[t.name];
+  document.getElementById("rosterCount").textContent = rosterInfo
+    ? (rosterInfo.total ? `(${rosterInfo.players.length} of ${rosterInfo.total})` : `(${rosterInfo.players.length} pulled so far)`)
+    : "";
+  document.getElementById("teamRoster").innerHTML = rosterInfo ? rosterInfo.players.map(p=>`
+    <div class="roster-row">
+      <div class="jersey num">${p.num}</div>
+      <div class="row-main">
+        <div class="primary">${p.name} <span class="pos">${p.pos}</span></div>
+        <div class="secondary">${p.cl}${p.hometown?' · '+p.hometown:''}</div>
+      </div>
+    </div>`).join("") : `<div class="empty-hint">Roster not yet pulled for this team.</div>`;
+
+  document.getElementById("teamNote").textContent = rosterInfo
+    ? "Real data, pulled live from " + t.name + "'s official athletics site."
+    : "Standings and record are real, pulled live from " + t.conf + "'s conference site. This team's own roster/schedule pull hasn't succeeded yet (some athletics sites block automated requests) — it's on the list to revisit.";
+
+  showTab("team");
+}
+
+function renderRankUC(){
+  document.getElementById("rankLabel").textContent = "United Soccer Coaches D3 Top 25";
+  document.getElementById("rankNote").textContent = "Real, live — Poll 1, dated Sep 15, 2026 (records through Sep 13). Used as the rankings source until NPI publishes its first poll of the season.";
+  document.getElementById("rankList").innerHTML = uscTop25.map((r,i)=>{
+    let hitConf = null;
+    for (const conf of conferences) {
+      if ((teams[conf]||[]).some(t=>t.name===r.team)) { hitConf = conf; break; }
+    }
+    const clickable = hitConf ? ` style="cursor:pointer" onclick="openTeam('${r.team}')"` : "";
+    return `
+    <div class="list-row ${i<3?'top':''}">
+      <div class="rank-badge">${r.rank}</div>
+      <div class="row-main">
+        <div class="primary"${clickable}>${r.team}${hitConf?` <span class="watch-chip">${hitConf}</span>`:''}</div>
+        <div class="secondary">${r.rec}</div>
+      </div>
+    </div>`;
+  }).join("");
+}
+function renderRankNPI(){
+  document.getElementById("rankLabel").textContent = "National NPI Rankings";
+  document.getElementById("rankNote").textContent = "The NCAA hasn't published its first weekly NPI of the 2026 season yet (checked live, returned empty). This tab will populate once it does — usually a few weeks into the season.";
+  document.getElementById("rankList").innerHTML = `<div class="empty-hint">NPI rankings not yet published for 2026.<br>Check the United Soccer Coaches tab in the meantime.</div>`;
+}
+// Per-conference site domain for the "Real, live from X" note. Falls back
+// to the first team's own athletics domain when we don't have a specific
+// conference-site mapping for this conference.
+const conferenceSites = {
+  SCIAC: "thesciac.org", NESCAC: "nescac.com", UAA: "uaasports.info",
+  MIAC: "miacathletics.com", WIAC: "wiacsports.com", "Northwest Conference": "nwcsports.com",
+};
+function conferenceSiteFor(conf){
+  if (conferenceSites[conf]) return conferenceSites[conf];
+  const rows = teams[conf] || [];
+  return (rows[0] && rows[0].site) || "the conference's site";
+}
+let activeStandingsConf = "SCIAC";
+
+function renderStandingsConfSeg(){
+  const el = document.getElementById("standingsConfSeg");
+  el.innerHTML = conferences.map((c,i)=>
+    `<button data-sc="${c}" class="${c===activeStandingsConf?'active':''}">${c}</button>`).join("");
+}
+
+function renderStandings(conf){
+  if(conf) activeStandingsConf = conf;
+  const rows = teams[activeStandingsConf];
+  const hasConf = rows.some(t=>t.confRec);
+  document.getElementById("rankLabel").textContent = activeStandingsConf + " standings";
+  document.getElementById("rankNote").textContent = `Real, live from ${conferenceSiteFor(activeStandingsConf)} — current 2026 season.` +
+    (hasConf ? "" : " Conference play hasn't started yet for most teams, so records shown are overall/non-conference only.");
+  document.getElementById("rankList").innerHTML = `
+    <div class="standings-scroll"><table class="standings-table">
+      <thead><tr><th>#</th><th>Team</th>${hasConf?'<th>Conf</th>':''}<th>Overall</th></tr></thead>
+      <tbody>
+        ${rows.map((t,i)=>`
+          <tr class="${i===0?'top':''}">
+            <td class="rank-cell">${i+1}</td>
+            <td class="team-cell" onclick="openTeam('${t.name}')"><span class="crest-badge sm">${t.name.slice(0,2).toUpperCase()}</span>${t.name}</td>
+            ${hasConf?`<td class="num-cell">${t.confRec||"—"}</td>`:''}
+            <td class="num-cell strong">${t.rec}</td>
+          </tr>`).join("")}
+      </tbody>
+    </table></div>`;
+}
+
+// Real national stat leaders — both individual (REAL_LEADERS) and team-level
+// (REAL_TEAM_LEADERS), both pulled live via run_more_leaders.py from the
+// NCAA stats feed. All four individual categories are live now, not just
+// save % — the old "coming online next, disabled" state is gone.
+const INDIVIDUAL_STAT_CATS = [
+  {k:"save_pct", label:"Save %", figLabel:"SV%", valueKey:"Pct."},
+  {k:"goals_per_game", label:"Goals/gm", figLabel:"G/gm", valueKey:"Per Game"},
+  {k:"assists_per_game", label:"Assists/gm", figLabel:"A/gm", valueKey:"Per Game"},
+  {k:"points_per_game", label:"Points/gm", figLabel:"Pts/gm", valueKey:"Per Game"},
+];
+const TEAM_STAT_CATS = [
+  {k:"goals_per_game", label:"Goals/gm", figLabel:"G/gm", valueKey:"Per Game"},
+  {k:"total_goals", label:"Total Goals", figLabel:"Goals", valueKey:"Goals"},
+  {k:"total_assists", label:"Total Assists", figLabel:"Assists", valueKey:"Assists"},
+  {k:"assists_per_game", label:"Assists/gm", figLabel:"A/gm", valueKey:"Per Game"},
+];
+let activeStatGroup = "individual";
+let activeStatCat = "save_pct";
+
+function renderStatGroupSeg(){
+  document.getElementById("statGroupSeg").innerHTML = [["individual","Individual"],["team","Team"]].map(([g,label])=>
+    `<button data-grp="${g}" class="${g===activeStatGroup?'active':''}">${label}</button>`).join("");
+}
+
+function renderStatSeg(){
+  const cats = activeStatGroup === "individual" ? INDIVIDUAL_STAT_CATS : TEAM_STAT_CATS;
+  document.getElementById("statSeg").innerHTML = cats.map(c=>
+    `<button data-stat="${c.k}" class="${c.k===activeStatCat?'active':''}">${c.label}</button>`).join("");
+}
+
+function renderStatList(){
+  const cats = activeStatGroup === "individual" ? INDIVIDUAL_STAT_CATS : TEAM_STAT_CATS;
+  const catDef = cats.find(c=>c.k===activeStatCat) || cats[0];
+  const source = activeStatGroup === "individual" ? REAL_LEADERS : REAL_TEAM_LEADERS;
+  const payload = source[catDef.k];
+  const rows = (payload && payload.data) || [];
+
+  document.getElementById("statLabel").textContent = (payload ? payload.title : catDef.label) + " — Division III, current season";
+  document.getElementById("statNote").textContent = payload
+    ? "Real, live from the NCAA stats feed — " + payload.updated + "."
+    : "This category hasn't been pulled yet.";
+
+  document.getElementById("statList").innerHTML = rows.slice(0, 25).map((r,i)=>{
+    const value = r[catDef.valueKey];
+    if (activeStatGroup === "individual") {
+      return `
+      <div class="list-row ${i===0?'top':''}">
+        <div class="crest-badge sm" style="background:${i===0?'linear-gradient(155deg,var(--gold),#e7c877)':'linear-gradient(155deg,var(--pitch),var(--pitch-2))'};color:${i===0?'var(--gold-ink)':'#f4f1e8'};">${r.Rank}</div>
+        <div class="row-main">
+          <div class="primary">${r.Name}</div>
+          <div class="secondary">${r.Team} · ${r.Cl} · ${r.Games} GP</div>
+        </div>
+        <div class="row-trail">
+          <div class="figure num">${value}</div>
+          <div class="figlabel">${catDef.figLabel}</div>
+        </div>
+      </div>`;
+    }
+    return `
+      <div class="list-row ${i===0?'top':''}">
+        <div class="crest-badge sm" style="background:${i===0?'linear-gradient(155deg,var(--gold),#e7c877)':'linear-gradient(155deg,var(--pitch),var(--pitch-2))'};color:${i===0?'var(--gold-ink)':'#f4f1e8'};">${r.Rank}</div>
+        <div class="row-main">
+          <div class="primary">${r.Team}</div>
+          <div class="secondary">${r["Team Games"]} GP</div>
+        </div>
+        <div class="row-trail">
+          <div class="figure num">${value}</div>
+          <div class="figlabel">${catDef.figLabel}</div>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+/* ---- tabs ---- */
+function showTab(name){
+  document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
+  document.getElementById("panel-"+name).classList.add("active");
+  document.querySelectorAll(".tabbar button").forEach(b=>b.classList.toggle("active", b.dataset.tab===name));
+}
+document.querySelectorAll(".tabbar button").forEach(b=>{
+  b.addEventListener("click", ()=> showTab(b.dataset.tab));
+});
+
+document.getElementById("confSeg").addEventListener("click", e=>{
+  const btn = e.target.closest("button"); if(!btn) return;
+  document.querySelectorAll("#confSeg button").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  renderTeamList(btn.dataset.c);
+});
+
+document.getElementById("rankSeg").addEventListener("click", e=>{
+  const btn = e.target.closest("button"); if(!btn) return;
+  document.querySelectorAll("#rankSeg button").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById("standingsConfSeg").hidden = btn.dataset.rank!=="standings";
+  if(btn.dataset.rank==="npi") renderRankNPI();
+  else if(btn.dataset.rank==="uc") renderRankUC();
+  else { renderStandingsConfSeg(); renderStandings(); }
+});
+
+document.getElementById("standingsConfSeg").addEventListener("click", e=>{
+  const btn = e.target.closest("button"); if(!btn) return;
+  document.querySelectorAll("#standingsConfSeg button").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  renderStandings(btn.dataset.sc);
+});
+
+document.getElementById("statGroupSeg").addEventListener("click", e=>{
+  const btn = e.target.closest("button"); if(!btn) return;
+  activeStatGroup = btn.dataset.grp;
+  activeStatCat = activeStatGroup === "individual" ? "save_pct" : "goals_per_game";
+  renderStatGroupSeg();
+  renderStatSeg();
+  renderStatList();
+});
+
+document.getElementById("statSeg").addEventListener("click", e=>{
+  const btn = e.target.closest("button"); if(!btn) return;
+  activeStatCat = btn.dataset.stat;
+  renderStatSeg();
+  renderStatList();
+});
+
+/* ---- init ---- */
+renderLive();
+renderHomeStandings();
+renderHomeLeaders();
+renderFollowed();
+renderConfSeg();
+renderTeamList(conferences[0]);
+renderRankUC();
+renderStatGroupSeg();
+renderStatSeg();
+renderStatList();
+</script>
