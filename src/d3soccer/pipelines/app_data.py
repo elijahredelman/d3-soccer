@@ -1,28 +1,29 @@
 """
-Reads every real data snapshot we've pulled so far (SCIAC, batch 1/2/3
-conferences, national leaders) and emits a single compact JS file
-(app_data.js) with lookup objects for the Pitch Sheet prototype:
+Turns the newest snapshots into web/app_data.js, a set of lookup objects the
+site reads directly:
 
-  REAL_ROSTERS     team name -> {players, total, partial}
-  REAL_SCHEDULES   team name -> [games]
-  REAL_STATS       team name -> {scorers, keepers}
+  REAL_ROSTERS      team name -> {players, total, partial}
+  REAL_SCHEDULES    team name -> [games]
+  REAL_STATS        team name -> {scorers, keepers}
   REAL_STANDINGS    conference name -> [ {name, confRec, overallRec, confPct} ]
   REAL_SITES        team name -> athletics site domain
   REAL_CONFERENCES  [conference names present, in a sensible display order]
   REAL_LEADERS      individual national leader category -> raw NCAA-API payload
   REAL_TEAM_LEADERS team-level national leader category -> raw NCAA-API payload
+  REAL_NPI          raw NCAA-API NPI payload ({updated, data: [...]}) or null
+  REAL_SCOREBOARD   [ {status, home, away, hs, as, conf, time, clock} ] for today
+  REAL_USC_POLL     [ {rank, team, rec} ] United Soccer Coaches Top 25
+  REAL_META         {conferencesDate, nationalFetchedAt, nationalDate, built}
 
-Run this after any pilot script finishes to regenerate app_data.js with
-whatever's newest. It always prefers the most recent dated snapshot file
-for the same conference set if more than one exists.
+    uv run d3soccer build
 """
 
-import glob
 import json
-import os
 import re
+from datetime import UTC, datetime
 
-from d3soccer.config import APP_DATA_JS, SNAPSHOT_DIR
+from d3soccer.config import APP_DATA_JS
+from d3soccer.pipelines import snapshots
 
 DISPLAY_ORDER = [
     "SCIAC",
@@ -69,69 +70,37 @@ DISPLAY_ORDER = [
 ]
 
 
-def _latest(pattern):
-    """Return the path with the latest YYYY-MM-DD date in its filename, or None."""
-    matches = glob.glob(pattern)
-    if not matches:
-        return None
-
-    def date_key(path):
-        m = re.search(r"(\d{4}-\d{2}-\d{2})", path)
-        return m.group(1) if m else ""
-
-    return sorted(matches, key=date_key)[-1]
-
-
 def load_all():
     """
-    Returns (teams, standings_by_conf, sites).
-    teams: team name -> {roster, schedule, stats}
-    standings_by_conf: conference name -> list of StandingRow dicts
-    sites: team name -> site domain
+    Returns (teams, standings_by_conf, sites) merged from the newest conference
+    snapshots, newer files overriding older ones.
     """
-    teams = {}
-    standings_by_conf = {}
-    sites = {}
-
-    sciac_path = _latest(str(SNAPSHOT_DIR / "sciac_snapshot_*.json"))
-    if sciac_path:
-        print(f"Loading {sciac_path}")
-        sciac = json.load(open(sciac_path))
-        for name, t in sciac.get("teams", {}).items():
-            teams[name] = t
-            sites[name] = t.get("domain")
-        standings_by_conf["SCIAC"] = sciac.get("standings", [])
-
-    # batch 1 is a dated "conferences_snapshot", batches 2/3 are
-    # "conferences2_snapshot" / "conferences3_snapshot" -- glob each
-    # family separately so a newer batch-1 re-run doesn't get shadowed by
-    # batch 2/3 files matching the same loose pattern.
-    for family in (
-        "conferences_snapshot_*.json",
-        "conferences2_snapshot_*.json",
-        "conferences3_snapshot_*.json",
-    ):
-        path = _latest(str(SNAPSHOT_DIR / family))
-        if not path:
-            continue
+    teams, standings_by_conf, sites = {}, {}, {}
+    for path in snapshots.latest_per_family(snapshots.CONFERENCE_FAMILIES):
         print(f"Loading {path}")
-        conf = json.load(open(path))
-        for conf_name, cdata in conf.get("conferences", {}).items():
+        snap = snapshots.load(path)
+        if "conference" in snap:  # legacy single-conference SCIAC file
+            confs = {snap["conference"]: snap}
+        else:
+            confs = snap.get("conferences", {})
+        for conf_name, cdata in confs.items():
             for name, t in cdata.get("teams", {}).items():
                 teams[name] = t
                 sites[name] = t.get("domain")
             standings_by_conf[conf_name] = cdata.get("standings", [])
-
     return teams, standings_by_conf, sites
 
 
-def load_leaders():
-    path = _latest(str(SNAPSHOT_DIR / "leaders_snapshot_*.json"))
-    if not path:
-        return {}, {}
-    print(f"Loading {path}")
-    d = json.load(open(path))
-    return d.get("leaders", {}), d.get("team_leaders", {})
+def load_national():
+    """Merged national data: leaders, team_leaders, npi_rankings, scoreboard, usc_poll."""
+    from d3soccer.pipelines.national import previous_state
+
+    return previous_state()
+
+
+def conferences_date():
+    paths = snapshots.latest_per_family(snapshots.CONFERENCE_FAMILIES)
+    return re.search(r"\d{4}-\d{2}-\d{2}", paths[-1].name).group(0) if paths else None
 
 
 def compact_roster(players):
@@ -204,9 +173,54 @@ def compact_standings(rows):
     return out
 
 
+def compact_scoreboard(payload):
+    """Today's games from the NCAA scoreboard feed: live first, then upcoming, then final."""
+    games = []
+    for item in (payload or {}).get("games", []):
+        g = item.get("game", {})
+        home, away = g.get("home", {}), g.get("away", {})
+        confs = (home.get("conferences") or [{}])[0]
+        status = g.get("gameState") or "pre"
+        row = {
+            "status": status,
+            "home": home.get("names", {}).get("short", ""),
+            "away": away.get("names", {}).get("short", ""),
+            "epoch": int(g.get("startTimeEpoch") or 0),
+            "date": g.get("startDate", ""),  # MM/DD/YYYY
+        }
+        if status != "pre":
+            row["hs"], row["as"] = home.get("score", ""), away.get("score", "")
+        else:
+            row["time"] = g.get("startTime") or "TBA"
+        if status == "live":
+            row["clock"] = " ".join(x for x in (g.get("currentPeriod"), g.get("contestClock")) if x)
+        if confs.get("conferenceSeo"):
+            row["conf"] = confs["conferenceSeo"].replace("-", " ").upper()
+        games.append(row)
+    order = {"live": 0, "pre": 1, "final": 2}
+    games.sort(key=lambda r: (order.get(r["status"], 1), r["epoch"]))
+    return games
+
+
+RECORD = re.compile(r"^\d+-\d+(-\d+)?$")
+
+
+def compact_usc_poll(rows):
+    out = []
+    for r in rows or []:
+        # Older snapshots stored the previous rank under "record"; keep only real W-L(-T).
+        rec = r.get("record") or ""
+        out.append({"rank": r["rank"], "team": r["team"], "rec": rec if RECORD.match(rec) else ""})
+    return out
+
+
+def _js(name, value):
+    return f"const {name} = " + json.dumps(value, separators=(",", ":"), ensure_ascii=False) + ";\n"
+
+
 def run():
     teams, standings_by_conf, sites = load_all()
-    leaders, team_leaders = load_leaders()
+    national = load_national()
 
     rosters, schedules, stats = {}, {}, {}
     for name, t in teams.items():
@@ -230,29 +244,33 @@ def run():
     ordered_confs = [c for c in DISPLAY_ORDER if c in present]
     ordered_confs += sorted(present - set(ordered_confs))
 
-    with open(APP_DATA_JS, "w") as f:
-        f.write(
-            "// Auto-generated from real scraped data -- see src/d3soccer/pipelines/app_data.py (`d3soccer build`)\n"
-        )
-        f.write("const REAL_ROSTERS = " + json.dumps(rosters, separators=(",", ":")) + ";\n")
-        f.write("const REAL_SCHEDULES = " + json.dumps(schedules, separators=(",", ":")) + ";\n")
-        f.write("const REAL_STATS = " + json.dumps(stats, separators=(",", ":")) + ";\n")
-        f.write("const REAL_STANDINGS = " + json.dumps(standings, separators=(",", ":")) + ";\n")
-        f.write("const REAL_SITES = " + json.dumps(sites, separators=(",", ":")) + ";\n")
-        f.write(
-            "const REAL_CONFERENCES = " + json.dumps(ordered_confs, separators=(",", ":")) + ";\n"
-        )
-        f.write("const REAL_LEADERS = " + json.dumps(leaders, separators=(",", ":")) + ";\n")
-        f.write(
-            "const REAL_TEAM_LEADERS = " + json.dumps(team_leaders, separators=(",", ":")) + ";\n"
-        )
+    npi = national.get("npi_rankings")
+    meta = {
+        "conferencesDate": conferences_date(),
+        "nationalFetchedAt": national.get("fetched_at"),
+        "nationalDate": national.get("generated"),
+        "built": datetime.now(UTC).isoformat(timespec="seconds"),
+    }
+
+    APP_DATA_JS.parent.mkdir(parents=True, exist_ok=True)
+    with open(APP_DATA_JS, "w", encoding="utf-8") as f:
+        f.write("// Auto-generated by `d3soccer build` from data/snapshots -- do not edit.\n")
+        f.write(_js("REAL_ROSTERS", rosters))
+        f.write(_js("REAL_SCHEDULES", schedules))
+        f.write(_js("REAL_STATS", stats))
+        f.write(_js("REAL_STANDINGS", standings))
+        f.write(_js("REAL_SITES", sites))
+        f.write(_js("REAL_CONFERENCES", ordered_confs))
+        f.write(_js("REAL_LEADERS", national.get("leaders", {})))
+        f.write(_js("REAL_TEAM_LEADERS", national.get("team_leaders", {})))
+        f.write(_js("REAL_NPI", npi if npi and npi.get("data") else None))
+        f.write(_js("REAL_SCOREBOARD", compact_scoreboard(national.get("scoreboard"))))
+        f.write(_js("REAL_USC_POLL", compact_usc_poll(national.get("usc_poll"))))
+        f.write(_js("REAL_META", meta))
 
     print(f"{len(rosters)} rosters, {len(schedules)} schedules, {len(stats)} team-stat sets")
     print(
-        f"{len(standings)} conferences with standings, {sum(len(v) for v in standings.values())} standings rows total"
+        f"{len(standings)} conferences with standings, "
+        f"{sum(len(v) for v in standings.values())} standings rows total"
     )
-    print("file size:", os.path.getsize(APP_DATA_JS), "bytes")
-
-
-if __name__ == "__main__":
-    run()
+    print(f"Wrote {APP_DATA_JS} ({APP_DATA_JS.stat().st_size:,} bytes)")

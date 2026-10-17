@@ -56,10 +56,16 @@ Paths are relative to the repo root.
   conferences
 - `src/d3soccer/scrapers/ncaa_national.py` — national stat leaders, live scores, and the
   United Soccer Coaches D3 poll
-- `src/d3soccer/pipelines/` — one pull job per batch (`sciac`, `conferences_batch1-3`,
-  `leaders`), each writing a dated JSON file to `data/snapshots/`, plus `app_data.py`,
-  which turns the latest snapshots into `web/app_data.js`
-- `data/snapshots/` — real snapshots, committed so the site builds without a live pull
+- `src/d3soccer/pipelines/conferences.py` — pulls every conference (or the ones
+  named) into one `conferences_snapshot_<date>.json`; failed or empty fetches keep
+  the team's previous data and are listed under `stale` / `failures`
+- `src/d3soccer/pipelines/national.py` — leaders, team leaders, NPI, scoreboard and
+  the coaches' poll into `national_snapshot_<date>.json`, same carry-forward rule
+- `src/d3soccer/pipelines/app_data.py` — turns the newest snapshots into
+  `web/app_data.js`
+- `data/snapshots/` — only the newest file per family is kept; older ones are in git
+  history. The `sciac`, `conferences2/3` and `leaders` files from the pilot scripts
+  are still read, and get pruned the first time the new jobs run.
 
 ## Running it for real
 
@@ -67,8 +73,9 @@ Paths are relative to the repo root.
 2. `uv sync`
 3. Fetch one live page (`curl https://oxyathletics.com/sports/mens-soccer/roster`)
    and compare its actual HTML to the selectors in `sidearm.py`; adjust.
-4. `uv run d3soccer scrape sciac` (or `batch1`, `batch2`, `batch3`, `leaders`, `all`)
-   to pull and write `data/snapshots/*.json`.
+4. `uv run d3soccer scrape conferences SCIAC` to pull one conference, or
+   `scrape national` / `scrape conferences` / `scrape all`. In production the
+   Refresh data workflow runs these on a schedule (see the README).
 5. `uv run d3soccer build` to regenerate `web/app_data.js`, then
    `uv run d3soccer serve` to view the site.
 6. Add conferences one at a time by adding entries to the `CONFERENCES` registry in

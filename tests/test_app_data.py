@@ -31,3 +31,39 @@ def test_committed_snapshots_cover_every_conference():
     teams, standings, sites = app_data.load_all()
     assert set(app_data.DISPLAY_ORDER) <= set(standings)
     assert "Occidental" in teams and sites["Occidental"] == "oxyathletics.com"
+
+
+def test_compact_scoreboard_orders_live_upcoming_final():
+    def game(state, home, epoch, **extra):
+        side = {"names": {"short": home}, "score": "1", "conferences": [{"conferenceSeo": "sciac"}]}
+        return {
+            "game": {
+                "gameState": state,
+                "home": side,
+                "away": {**side, "names": {"short": "Opp"}},
+                "startTimeEpoch": str(epoch),
+                **extra,
+            }
+        }
+
+    payload = {
+        "games": [
+            game("final", "F", 1),
+            game("pre", "P2", 30, startTime="7:00 PM ET"),
+            game("pre", "P1", 20, startTime="4:00 PM ET"),
+            game("live", "L", 10, currentPeriod="2nd", contestClock="61:00"),
+        ]
+    }
+    rows = app_data.compact_scoreboard(payload)
+    assert [r["home"] for r in rows] == ["L", "P1", "P2", "F"]
+    assert rows[0]["clock"] == "2nd 61:00" and rows[0]["conf"] == "SCIAC"
+    assert rows[1]["time"] == "4:00 PM ET" and "hs" not in rows[1]
+    assert app_data.compact_scoreboard(None) == []
+
+
+def test_compact_usc_poll_drops_previous_rank_stored_as_record():
+    rows = [
+        {"rank": 1, "team": "St. Olaf", "record": "1"},
+        {"rank": 2, "team": "Tufts", "record": "8-1-2"},
+    ]
+    assert [r["rec"] for r in app_data.compact_usc_poll(rows)] == ["", "8-1-2"]

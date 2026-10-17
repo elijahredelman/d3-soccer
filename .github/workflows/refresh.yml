@@ -1,0 +1,64 @@
+name: Refresh data
+
+# Scrapes fresh data, commits the new snapshots to main, then redeploys the site.
+#   every 2 hours: national (scores, leaders, NPI, coaches' poll), about a dozen requests
+#   daily:         everything, including all conferences' standings/rosters/schedules/stats
+on:
+  schedule:
+    - cron: "17 */2 * * *"
+    - cron: "41 9 * * *" # 2:41am Pacific / 5:41am Eastern
+  workflow_dispatch:
+    inputs:
+      job:
+        description: What to scrape
+        type: choice
+        options: [all, national, conferences]
+        default: all
+      only:
+        description: "Conferences only: space-separated keys (e.g. SCIAC NESCAC); blank = all"
+        required: false
+
+concurrency:
+  group: refresh
+  cancel-in-progress: false
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --no-dev
+
+      - name: Scrape
+        env:
+          JOB: ${{ inputs.job || (github.event.schedule == '41 9 * * *' && 'all' || 'national') }}
+          ONLY: ${{ inputs.only }}
+        run: uv run d3soccer scrape "$JOB" $ONLY
+
+      - name: Commit snapshots
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A data/snapshots
+          if git diff --cached --quiet; then
+            echo "No snapshot changes."
+            exit 0
+          fi
+          git commit -m "Refresh data ($(date -u +'%Y-%m-%d %H:%M') UTC)"
+          for i in 1 2 3 4; do
+            git push && exit 0
+            git pull --rebase
+          done
+          exit 1
+
+  deploy:
+    needs: scrape
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/pages.yml

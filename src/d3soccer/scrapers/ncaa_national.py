@@ -15,6 +15,8 @@ question, just for reliability.
 
 from __future__ import annotations
 
+import re
+
 import requests
 
 NCAA_API_BASE = "https://ncaa-api.henrygd.me"  # self-host this in production
@@ -128,7 +130,12 @@ def fetch_united_soccer_coaches_poll() -> list[dict]:
             {
                 "rank": int(cells[0]),
                 "team": cells[1],
-                "record": cells[2] if len(cells) > 2 else None,
+                # Columns after the team vary (record, points, previous rank), so pick
+                # the record out by shape rather than position.
+                "record": next((c for c in cells[2:] if RECORD_RE.match(c)), None),
             }
         )
     return rankings
+
+
+RECORD_RE = re.compile(r"^\d+-\d+(-\d+)?$")

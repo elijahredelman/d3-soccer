@@ -1,13 +1,17 @@
-import importlib
-
 import pytest
 
 from d3soccer import cli
 
 
-@pytest.mark.parametrize("module", cli.SCRAPE_JOBS.values())
-def test_every_scrape_job_has_a_run_function(module):
-    assert callable(importlib.import_module(f"d3soccer.pipelines.{module}").run)
+def test_scrape_all_runs_national_before_conferences(monkeypatch):
+    from d3soccer.pipelines import conferences, national
+
+    calls = []
+    monkeypatch.setattr(national, "run", lambda: calls.append("national"))
+    monkeypatch.setattr(conferences, "run", lambda only: calls.append(("conferences", only)))
+    cli.main(["scrape", "all"])
+    cli.main(["scrape", "conferences", "SCIAC", "UAA"])
+    assert calls == ["national", ("conferences", None), ("conferences", ["SCIAC", "UAA"])]
 
 
 def test_parser_rejects_unknown_job():

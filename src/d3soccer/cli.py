@@ -1,33 +1,25 @@
 """Command-line entry point: `d3soccer <command>`."""
 
 import argparse
-import importlib
 
 from d3soccer import __version__
 
-# `d3soccer scrape <job>` -> module in d3soccer.pipelines with a run() function.
-SCRAPE_JOBS = {
-    "sciac": "sciac",
-    "batch1": "conferences_batch1",
-    "batch2": "conferences_batch2",
-    "batch3": "conferences_batch3",
-    "leaders": "leaders",
-}
-
-
-def run_pipeline(module: str) -> None:
-    importlib.import_module(f"d3soccer.pipelines.{module}").run()
-
 
 def cmd_scrape(args: argparse.Namespace) -> None:
-    jobs = list(SCRAPE_JOBS) if args.job == "all" else [args.job]
-    for job in jobs:
-        print(f"== scrape {job} ==")
-        run_pipeline(SCRAPE_JOBS[job])
+    from d3soccer.pipelines import conferences, national
+
+    # National first: it is quick, and keeps scores current even if the long
+    # conference pull fails partway.
+    if args.job in ("national", "all"):
+        national.run()
+    if args.job in ("conferences", "all"):
+        conferences.run(args.only or None)
 
 
 def cmd_build(args: argparse.Namespace) -> None:
-    run_pipeline("app_data")
+    from d3soccer.pipelines import app_data
+
+    app_data.run()
 
 
 def cmd_serve(args: argparse.Namespace) -> None:
@@ -48,7 +40,10 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
 
     scrape = sub.add_parser("scrape", help="pull live data and write a dated snapshot")
-    scrape.add_argument("job", choices=[*SCRAPE_JOBS, "all"])
+    scrape.add_argument("job", choices=["national", "conferences", "all"])
+    scrape.add_argument(
+        "only", nargs="*", help="conference keys to pull (default: all), e.g. SCIAC NESCAC"
+    )
     scrape.set_defaults(func=cmd_scrape)
 
     build = sub.add_parser("build", help="regenerate web/app_data.js from the latest snapshots")
