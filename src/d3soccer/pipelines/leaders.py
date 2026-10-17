@@ -10,14 +10,23 @@ Pulls:
 
     uv run d3soccer scrape leaders
 """
+
 from __future__ import annotations
+
 import json
 from datetime import date
+
 from d3soccer.config import SNAPSHOT_DIR
 from d3soccer.scrapers import ncaa_national
 
+
 def run():
-    out = {"generated": date.today().isoformat(), "leaders": {}, "team_leaders": {}, "npi_rankings": None}
+    out = {
+        "generated": date.today().isoformat(),
+        "leaders": {},
+        "team_leaders": {},
+        "npi_rankings": None,
+    }
 
     for label, stat_id in ncaa_national.STAT_CATEGORIES.items():
         print(f"Fetching individual {label} (stat_id={stat_id})...")
@@ -40,7 +49,9 @@ def run():
         n_rows = len(npi.get("data", [])) if isinstance(npi, dict) else 0
         print(f"  got {n_rows} NPI rows")
         if n_rows == 0:
-            print("  NPI still empty -- hasn't started publishing yet this season, that's expected, not a bug")
+            print(
+                "  NPI still empty -- hasn't started publishing yet this season, that's expected, not a bug"
+            )
     except Exception as e:
         print(f"  NPI rankings failed: {e}")
 
@@ -48,6 +59,7 @@ def run():
     with open(out_path, "w") as f:
         json.dump(out, f, indent=2)
     print(f"Wrote {out_path}")
+
 
 if __name__ == "__main__":
     run()

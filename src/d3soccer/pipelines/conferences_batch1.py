@@ -55,22 +55,30 @@ def run():
             print(f"Fetching {team.name}...")
             team_data = {"domain": team.site_domain, "roster": [], "schedule": [], "stats": []}
             try:
-                team_data["roster"] = [dataclasses.asdict(p) for p in fetch_roster(team.site_domain, team.name)]
+                team_data["roster"] = [
+                    dataclasses.asdict(p) for p in fetch_roster(team.site_domain, team.name)
+                ]
             except Exception as e:
                 print(f"  {team.name} roster failed: {e}")
             try:
-                team_data["schedule"] = [dataclasses.asdict(g) for g in fetch_schedule(team.site_domain, team.name, 2026)]
+                team_data["schedule"] = [
+                    dataclasses.asdict(g) for g in fetch_schedule(team.site_domain, team.name, 2026)
+                ]
             except Exception as e:
                 print(f"  {team.name} schedule failed: {e}")
             try:
-                team_data["stats"] = [dataclasses.asdict(p) for p in fetch_stats(team.site_domain, team.name)]
+                team_data["stats"] = [
+                    dataclasses.asdict(p) for p in fetch_stats(team.site_domain, team.name)
+                ]
             except Exception as e:
                 print(f"  {team.name} stats failed: {e}")
             conf_data["teams"][team.name] = team_data
 
         snapshot["conferences"][conf_key] = conf_data
 
-    print("Fetching national data (scoreboard only -- leaders/USC poll already covered by the SCIAC pilot)...")
+    print(
+        "Fetching national data (scoreboard only -- leaders/USC poll already covered by the SCIAC pilot)..."
+    )
     try:
         snapshot["national"]["scoreboard"] = ncaa_national.fetch_scoreboard()
     except Exception as e:

@@ -63,15 +63,24 @@ def run():
             print(f"Fetching {team.name}...")
             team_data = {"domain": team.site_domain, "roster": [], "schedule": [], "stats": []}
             try:
-                team_data["roster"] = [dataclasses.asdict(p) for p in fetch_roster(team.site_domain, team.name, team.sport_slug)]
+                team_data["roster"] = [
+                    dataclasses.asdict(p)
+                    for p in fetch_roster(team.site_domain, team.name, team.sport_slug)
+                ]
             except Exception as e:
                 print(f"  {team.name} roster failed: {e}")
             try:
-                team_data["schedule"] = [dataclasses.asdict(g) for g in fetch_schedule(team.site_domain, team.name, 2026, team.sport_slug)]
+                team_data["schedule"] = [
+                    dataclasses.asdict(g)
+                    for g in fetch_schedule(team.site_domain, team.name, 2026, team.sport_slug)
+                ]
             except Exception as e:
                 print(f"  {team.name} schedule failed: {e}")
             try:
-                team_data["stats"] = [dataclasses.asdict(p) for p in fetch_stats(team.site_domain, team.name, team.sport_slug)]
+                team_data["stats"] = [
+                    dataclasses.asdict(p)
+                    for p in fetch_stats(team.site_domain, team.name, team.sport_slug)
+                ]
             except Exception as e:
                 print(f"  {team.name} stats failed: {e}")
             conf_data["teams"][team.name] = team_data

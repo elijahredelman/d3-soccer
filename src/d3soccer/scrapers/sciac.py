@@ -12,7 +12,7 @@ import re
 import requests
 from bs4 import BeautifulSoup
 
-from d3soccer.models import Team, StandingRow
+from d3soccer.models import StandingRow, Team
 
 CONFERENCE_NAME = "SCIAC"
 
@@ -86,7 +86,10 @@ def fetch_standings() -> list[StandingRow]:
         return []
 
     thead = table.find("thead")
-    raw_headers = [th.get_text(strip=True) for th in thead.select("th.hide-on-medium-down, th:not(.hide-on-large)")]
+    raw_headers = [
+        th.get_text(strip=True)
+        for th in thead.select("th.hide-on-medium-down, th:not(.hide-on-large)")
+    ]
     headers: list[str] = []
     for h in raw_headers:
         if not headers or headers[-1] != h:
@@ -103,11 +106,13 @@ def fetch_standings() -> list[StandingRow]:
         if not team_name:
             continue
         team_name = re.sub(r"\s*\([^)]*\)\s*$", "", team_name).strip()
-        rows.append(StandingRow(
-            conference=CONFERENCE_NAME,
-            team=team_name,
-            conf_record=_first_matching(row_map, "CONF. W-L", "Conf", "Conference") or "",
-            overall_record=_first_matching(row_map, "W-L", "Overall") or "",
-            conf_points=_first_matching(row_map, "CONF. PCT", "CPct.", "Pct."),
-        ))
+        rows.append(
+            StandingRow(
+                conference=CONFERENCE_NAME,
+                team=team_name,
+                conf_record=_first_matching(row_map, "CONF. W-L", "Conf", "Conference") or "",
+                overall_record=_first_matching(row_map, "W-L", "Overall") or "",
+                conf_points=_first_matching(row_map, "CONF. PCT", "CPct.", "Pct."),
+            )
+        )
     return rows

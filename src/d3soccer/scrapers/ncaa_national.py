@@ -78,10 +78,10 @@ def fetch_team_stat_leaders(stat_id: int, division: str = "d3") -> dict:
 # against https://ncaa-api.henrygd.me/stats/soccer-men/d3 (team-stats
 # section of the same category listing used for STAT_CATEGORIES above).
 TEAM_STAT_CATEGORIES = {
-    "goals_per_game": 30,    # "Scoring Offense" -- team goals/gm
-    "total_goals": 575,       # "Total Goals"
-    "total_assists": 569,     # "Total Assists"
-    "assists_per_game": 90,   # "Assists Per Game" (team)
+    "goals_per_game": 30,  # "Scoring Offense" -- team goals/gm
+    "total_goals": 575,  # "Total Goals"
+    "total_assists": 569,  # "Total Assists"
+    "assists_per_game": 90,  # "Assists Per Game" (team)
 }
 
 
@@ -109,7 +109,6 @@ def fetch_united_soccer_coaches_poll() -> list[dict]:
     fetch the raw HTML and find the real table/markup; this function is a
     first-pass BeautifulSoup parser to verify against that HTML.
     """
-    import re
     from bs4 import BeautifulSoup
 
     url = "https://unitedsoccercoaches.org/rankings/college-rankings/ncaa-diii-men/"
@@ -125,9 +124,11 @@ def fetch_united_soccer_coaches_poll() -> list[dict]:
         cells = [c.get_text(strip=True) for c in tr.find_all(["td", "th"])]
         if len(cells) < 2 or not cells[0].isdigit():
             continue
-        rankings.append({
-            "rank": int(cells[0]),
-            "team": cells[1],
-            "record": cells[2] if len(cells) > 2 else None,
-        })
+        rankings.append(
+            {
+                "rank": int(cells[0]),
+                "team": cells[1],
+                "record": cells[2] if len(cells) > 2 else None,
+            }
+        )
     return rankings

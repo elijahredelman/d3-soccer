@@ -16,6 +16,7 @@ Run this after any pilot script finishes to regenerate app_data.js with
 whatever's newest. It always prefers the most recent dated snapshot file
 for the same conference set if more than one exists.
 """
+
 import glob
 import json
 import os
@@ -24,13 +25,47 @@ import re
 from d3soccer.config import APP_DATA_JS, SNAPSHOT_DIR
 
 DISPLAY_ORDER = [
-    "SCIAC", "NESCAC", "UAA", "MIAC", "WIAC", "Northwest Conference",
-    "Liberty League", "Centennial", "Empire 8", "OAC", "NCAC", "NJAC", "NEWMAC",
-    "LEC", "NAC", "MASCAC", "Skyline", "SUNYAC", "GNAC",
-    "CUNYAC", "UNITED_EAST", "ATLANTIC_EAST", "MAC_COMMONWEALTH", "MAC_FREEDOM", "LANDMARK",
-    "AMCC", "PAC", "ODAC", "SAA", "SCAC",
-    "USA_SOUTH", "ASC", "C2C", "HCAC", "MIAA", "NACC",
-    "CCIW", "MWC", "ARC", "SLIAC", "UMAC",
+    "SCIAC",
+    "NESCAC",
+    "UAA",
+    "MIAC",
+    "WIAC",
+    "Northwest Conference",
+    "Liberty League",
+    "Centennial",
+    "Empire 8",
+    "OAC",
+    "NCAC",
+    "NJAC",
+    "NEWMAC",
+    "LEC",
+    "NAC",
+    "MASCAC",
+    "Skyline",
+    "SUNYAC",
+    "GNAC",
+    "CUNYAC",
+    "UNITED_EAST",
+    "ATLANTIC_EAST",
+    "MAC_COMMONWEALTH",
+    "MAC_FREEDOM",
+    "LANDMARK",
+    "AMCC",
+    "PAC",
+    "ODAC",
+    "SAA",
+    "SCAC",
+    "USA_SOUTH",
+    "ASC",
+    "C2C",
+    "HCAC",
+    "MIAA",
+    "NACC",
+    "CCIW",
+    "MWC",
+    "ARC",
+    "SLIAC",
+    "UMAC",
 ]
 
 
@@ -71,7 +106,11 @@ def load_all():
     # "conferences2_snapshot" / "conferences3_snapshot" -- glob each
     # family separately so a newer batch-1 re-run doesn't get shadowed by
     # batch 2/3 files matching the same loose pattern.
-    for family in ("conferences_snapshot_*.json", "conferences2_snapshot_*.json", "conferences3_snapshot_*.json"):
+    for family in (
+        "conferences_snapshot_*.json",
+        "conferences2_snapshot_*.json",
+        "conferences3_snapshot_*.json",
+    ):
         path = _latest(str(SNAPSHOT_DIR / family))
         if not path:
             continue
@@ -125,16 +164,27 @@ def compact_stats(players):
     scorers, keepers = [], []
     for p in players:
         if p.get("position") == "GK" or p.get("saves") is not None:
-            keepers.append({
-                "name": p["name"], "gp": p.get("games_played"), "min": p.get("minutes"),
-                "ga": p.get("goals_against"), "sv": p.get("saves"), "pct": p.get("save_pct"),
-            })
+            keepers.append(
+                {
+                    "name": p["name"],
+                    "gp": p.get("games_played"),
+                    "min": p.get("minutes"),
+                    "ga": p.get("goals_against"),
+                    "sv": p.get("saves"),
+                    "pct": p.get("save_pct"),
+                }
+            )
         elif p.get("goals") is not None or p.get("points") is not None:
-            scorers.append({
-                "name": p["name"], "gp": p.get("games_played"), "g": p.get("goals"),
-                "a": p.get("assists"), "pts": p.get("points"),
-            })
-    scorers.sort(key=lambda r: (r["pts"] or 0), reverse=True)
+            scorers.append(
+                {
+                    "name": p["name"],
+                    "gp": p.get("games_played"),
+                    "g": p.get("goals"),
+                    "a": p.get("assists"),
+                    "pts": p.get("points"),
+                }
+            )
+    scorers.sort(key=lambda r: r["pts"] or 0, reverse=True)
     return {"scorers": scorers[:12], "keepers": keepers[:4]}
 
 
@@ -143,12 +193,14 @@ def compact_standings(rows):
     for r in rows:
         if not r.get("team"):
             continue
-        out.append({
-            "name": r["team"],
-            "confRec": r.get("conf_record") or "",
-            "overallRec": r.get("overall_record") or "",
-            "confPct": r.get("conf_points"),
-        })
+        out.append(
+            {
+                "name": r["team"],
+                "confRec": r.get("conf_record") or "",
+                "overallRec": r.get("overall_record") or "",
+                "confPct": r.get("conf_points"),
+            }
+        )
     return out
 
 
@@ -159,7 +211,11 @@ def run():
     rosters, schedules, stats = {}, {}, {}
     for name, t in teams.items():
         if t.get("roster"):
-            rosters[name] = {"players": compact_roster(t["roster"]), "total": len(t["roster"]), "partial": False}
+            rosters[name] = {
+                "players": compact_roster(t["roster"]),
+                "total": len(t["roster"]),
+                "partial": False,
+            }
         if t.get("schedule"):
             schedules[name] = compact_schedule(t["schedule"])
         if t.get("stats"):
@@ -175,18 +231,26 @@ def run():
     ordered_confs += sorted(present - set(ordered_confs))
 
     with open(APP_DATA_JS, "w") as f:
-        f.write("// Auto-generated from real scraped data -- see src/d3soccer/pipelines/app_data.py (`d3soccer build`)\n")
+        f.write(
+            "// Auto-generated from real scraped data -- see src/d3soccer/pipelines/app_data.py (`d3soccer build`)\n"
+        )
         f.write("const REAL_ROSTERS = " + json.dumps(rosters, separators=(",", ":")) + ";\n")
         f.write("const REAL_SCHEDULES = " + json.dumps(schedules, separators=(",", ":")) + ";\n")
         f.write("const REAL_STATS = " + json.dumps(stats, separators=(",", ":")) + ";\n")
         f.write("const REAL_STANDINGS = " + json.dumps(standings, separators=(",", ":")) + ";\n")
         f.write("const REAL_SITES = " + json.dumps(sites, separators=(",", ":")) + ";\n")
-        f.write("const REAL_CONFERENCES = " + json.dumps(ordered_confs, separators=(",", ":")) + ";\n")
+        f.write(
+            "const REAL_CONFERENCES = " + json.dumps(ordered_confs, separators=(",", ":")) + ";\n"
+        )
         f.write("const REAL_LEADERS = " + json.dumps(leaders, separators=(",", ":")) + ";\n")
-        f.write("const REAL_TEAM_LEADERS = " + json.dumps(team_leaders, separators=(",", ":")) + ";\n")
+        f.write(
+            "const REAL_TEAM_LEADERS = " + json.dumps(team_leaders, separators=(",", ":")) + ";\n"
+        )
 
     print(f"{len(rosters)} rosters, {len(schedules)} schedules, {len(stats)} team-stat sets")
-    print(f"{len(standings)} conferences with standings, {sum(len(v) for v in standings.values())} standings rows total")
+    print(
+        f"{len(standings)} conferences with standings, {sum(len(v) for v in standings.values())} standings rows total"
+    )
     print("file size:", os.path.getsize(APP_DATA_JS), "bytes")
 
 
