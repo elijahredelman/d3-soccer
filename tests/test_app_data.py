@@ -28,9 +28,36 @@ def test_compact_standings_skips_blank_rows():
 
 
 def test_committed_snapshots_cover_every_conference():
-    teams, standings, sites = app_data.load_all()
+    teams, standings, sites, conf_teams = app_data.load_all()
     assert set(app_data.DISPLAY_ORDER) <= set(standings)
     assert "Occidental" in teams and sites["Occidental"] == "oxyathletics.com"
+    assert "Occidental" in conf_teams["SCIAC"]
+
+
+def test_compact_standings_uses_registry_names_and_fills_gaps():
+    def game(opp, result):
+        return {"opponent": opp, "result": result}
+
+    teams = {
+        "Wisconsin-Platteville": {"schedule": [game("UW-Stout", "W,2-0"), game("Loras", "L,0-1")]},
+        "Wisconsin-Stout": {
+            "schedule": [game("University of Wisconsin-Platteville", "L,0-2"), game("Coe", "T,1-1")]
+        },
+    }
+    # The conference page shows short names and its "Pct." is really the overall pct.
+    rows = [
+        {
+            "team": "UW-Platteville*",
+            "conf_record": "",
+            "overall_record": "7-4-3",
+            "conf_points": ".607",
+        }
+    ]
+    out = app_data.compact_standings(rows, teams)
+    assert out == [
+        {"name": "Wisconsin-Platteville", "confRec": "1-0", "overallRec": "7-4-3", "confPct": None},
+        {"name": "Wisconsin-Stout", "confRec": "0-1", "overallRec": "0-1-1", "confPct": None},
+    ]
 
 
 def test_compact_scoreboard_orders_live_upcoming_final():
