@@ -73,3 +73,12 @@ def test_npi_falls_through_to_first_slug_with_rows(monkeypatch):
     monkeypatch.setattr(ncaa_national.requests, "get", get)
     payload = ncaa_national.fetch_npi_rankings()
     assert payload["source_slug"] == "npi" and payload["data"] == [{"Rank": "1"}]
+
+
+def test_describe_dumps_selector_and_tiny_body(monkeypatch):
+    html = "<html><body><table><tbody><tr><td>X</td></tr></tbody></table></body></html>"
+    monkeypatch.setattr(probe.requests, "get", lambda *a, **k: FakeResponse(html, url="u"))
+    out = "\n".join(probe.describe("u", dump=["tbody tr", "li.nope"]))
+    assert "dump 'tbody tr': '<tr><td>X</td></tr>'" in out
+    assert "dump 'li.nope': no match" in out
+    assert "body: '<html>" in out
