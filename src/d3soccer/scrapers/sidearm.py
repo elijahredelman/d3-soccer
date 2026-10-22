@@ -47,6 +47,18 @@ def _get(url: str) -> BeautifulSoup:
     return BeautifulSoup(http.get(url).text, "lxml")
 
 
+def _nothing_found(soup: BeautifulSoup, url: str) -> ValueError:
+    """An error saying what the page looked like, for pages that parse to nothing."""
+    html = str(soup)
+    title = soup.title.get_text(" ", strip=True) if soup.title else ""
+    markers = [
+        m
+        for m in ("sidearm", "prestosports", "s-person-card", "s-game-card", "__NUXT__", "<table")
+        if m in html
+    ]
+    return ValueError(f"nothing parsed from {url}: title {title!r}, markers {markers}")
+
+
 def _clean(text: str) -> str:
     return re.sub(r"\s+", " ", text or "").strip()
 
@@ -59,7 +71,10 @@ def _clean(text: str) -> str:
 def fetch_roster(site_domain: str, team_name: str, sport_slug: str = "mens-soccer") -> list[Player]:
     url = f"https://{site_domain}/sports/{sport_slug}/roster"
     soup = _get(url)
-    return _parse_roster_html(soup, team_name)
+    players = _parse_roster_html(soup, team_name)
+    if not players:
+        raise _nothing_found(soup, url)
+    return players
 
 
 def _parse_roster_html(soup: BeautifulSoup, team_name: str) -> list[Player]:
@@ -106,7 +121,10 @@ def fetch_schedule(
 ) -> list[Game]:
     url = f"https://{site_domain}/sports/{sport_slug}/schedule/{year}"
     soup = _get(url)
-    return _parse_schedule_html(soup, team_name)
+    games = _parse_schedule_html(soup, team_name)
+    if not games:
+        raise _nothing_found(soup, url)
+    return games
 
 
 def _parse_schedule_html(soup: BeautifulSoup, team_name: str) -> list[Game]:
@@ -176,7 +194,10 @@ def fetch_stats(site_domain: str, team_name: str, sport_slug: str = "mens-soccer
     """
     url = f"https://{site_domain}/sports/{sport_slug}/stats"
     soup = _get(url)
-    return _parse_stats_html(soup, team_name)
+    players = _parse_stats_html(soup, team_name)
+    if not players:
+        raise _nothing_found(soup, url)
+    return players
 
 
 def _table_headers(table) -> list[str]:
