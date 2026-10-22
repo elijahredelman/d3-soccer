@@ -1,0 +1,8 @@
+# NCAA DIII men's soccer NPI, pasted by hand each week. The site shows the top 100.
+#
+# 1. Open https://stats.ncaa.org/selection_rankings/nitty_gritties/53751
+# 2. Select the table from its header row down, copy, and paste it below the
+#    "as of" line, replacing the old table.
+# 3. Update the date on the "as of" line, then commit. The site redeploys itself.
+#
+# as of

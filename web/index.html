@@ -595,12 +595,14 @@ function renderRankNPI(){
   }
   document.getElementById("rankNote").textContent = "Official NCAA rankings" +
     (REAL_NPI.updated ? " · " + REAL_NPI.updated : "") + ".";
-  const pick = (row, keys) => keys.find(k => k in row);
+  const pick = (row, re) => Object.keys(row).find(k => re.test(k));
   document.getElementById("rankList").innerHTML = REAL_NPI.data.map((row,i)=>{
-    const rankKey = pick(row, ["Rank", "RANK", "rank"]);
-    const teamKey = pick(row, ["School", "Team", "SCHOOL", "TEAM", "Name", "school", "team"]);
+    const rankKey = pick(row, /^(npi\s*)?(rank|rk)\.?$/i) || pick(row, /rank/i);
+    const teamKey = pick(row, /^(team|school|name)$/i) || pick(row, /team|school/i);
+    // The nitty gritty report has many columns; the first few (record, NPI, SOS) fit.
     const extra = Object.entries(row)
-      .filter(([k,v]) => k !== rankKey && k !== teamKey && v !== "" && v != null)
+      .filter(([k,v]) => k !== rankKey && k !== teamKey && k && v !== "" && v != null)
+      .slice(0, 4)
       .map(([k,v]) => `${k} ${v}`).join(" · ");
     return rankRow(rankKey ? row[rankKey] : i+1, teamKey ? row[teamKey] : "", extra, i);
   }).join("");

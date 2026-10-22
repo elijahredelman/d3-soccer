@@ -10,7 +10,8 @@ site reads directly:
   REAL_CONFERENCES  [conference names present, in a sensible display order]
   REAL_LEADERS      individual national leader category -> raw NCAA-API payload
   REAL_TEAM_LEADERS team-level national leader category -> raw NCAA-API payload
-  REAL_NPI          raw NCAA-API NPI payload ({updated, data: [...]}) or null
+  REAL_NPI          pasted NPI table (data/npi.txt) or the raw NCAA-API NPI payload
+                    ({updated, data: [...]}), or null
   REAL_SCOREBOARD   [ {status, home, away, hs, as, conf, time, clock} ] for today
   REAL_USC_POLL     [ {rank, team, rec} ] United Soccer Coaches Top 25
   REAL_META         {conferencesDate, nationalFetchedAt, nationalDate, built}
@@ -24,7 +25,7 @@ from datetime import UTC, datetime
 
 from d3soccer import teamnames
 from d3soccer.config import APP_DATA_JS
-from d3soccer.pipelines import snapshots
+from d3soccer.pipelines import npi_paste, snapshots
 
 DISPLAY_ORDER = [
     "SCIAC",
@@ -302,7 +303,8 @@ def run():
     ordered_confs = [c for c in DISPLAY_ORDER if c in present]
     ordered_confs += sorted(present - set(ordered_confs))
 
-    npi = national.get("npi_rankings")
+    # The pasted official table wins over the feed, which has been empty all season.
+    npi = npi_paste.load() or national.get("npi_rankings")
     meta = {
         "conferencesDate": conferences_date(),
         "nationalFetchedAt": national.get("fetched_at"),
