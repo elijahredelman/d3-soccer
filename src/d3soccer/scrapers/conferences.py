@@ -16,16 +16,10 @@ from __future__ import annotations
 
 import re
 
-import requests
 from bs4 import BeautifulSoup
 
 from d3soccer.models import StandingRow, Team
-
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; D3SoccerAppBot/0.1; contact: elijahredelman@gmail.com)"
-}
-TIMEOUT = 15
-
+from d3soccer.scrapers import http
 
 # ---------------------------------------------------------------------
 # NESCAC -- New England Small College Athletic Conference
@@ -1143,9 +1137,7 @@ def fetch_standings(conference_key: str) -> list[StandingRow]:
         raise ValueError(
             f"{conference_key} has no static standings URL -- use its dedicated fetch function"
         )
-    resp = requests.get(cfg["standings_url"], headers=HEADERS, timeout=TIMEOUT)
-    resp.raise_for_status()
-    return _parse_sidearm_standings_table(resp.text, conference_key)
+    return _parse_sidearm_standings_table(http.get(cfg["standings_url"]).text, conference_key)
 
 
 def fetch_nescac_standings() -> list[StandingRow]:
@@ -1158,15 +1150,12 @@ def fetch_nescac_standings() -> list[StandingRow]:
     """
     standings_id = NESCAC_FALLBACK_STANDINGS_ID
     try:
-        hub_resp = requests.get("https://nescac.com/sports/msoc", headers=HEADERS, timeout=TIMEOUT)
-        hub_resp.raise_for_status()
+        hub_resp = http.get("https://nescac.com/sports/msoc")
         match = re.search(r"standings\.aspx\?standings=(\d+)", hub_resp.text)
         if match:
             standings_id = int(match.group(1))
-    except requests.RequestException:
+    except http.RequestException:
         pass  # fall back to the hardcoded id
 
     url = f"https://nescac.com/standings.aspx?standings={standings_id}"
-    resp = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
-    resp.raise_for_status()
-    return _parse_sidearm_standings_table(resp.text, "NESCAC")
+    return _parse_sidearm_standings_table(http.get(url).text, "NESCAC")

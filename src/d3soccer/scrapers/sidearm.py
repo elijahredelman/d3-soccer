@@ -37,21 +37,14 @@ from __future__ import annotations
 
 import re
 
-import requests
 from bs4 import BeautifulSoup
 
 from d3soccer.models import Game, Player
-
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; D3SoccerAppBot/0.1; contact: elijahredelman@gmail.com)"
-}
-TIMEOUT = 15
+from d3soccer.scrapers import http
 
 
 def _get(url: str) -> BeautifulSoup:
-    resp = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
-    resp.raise_for_status()
-    return BeautifulSoup(resp.text, "lxml")
+    return BeautifulSoup(http.get(url).text, "lxml")
 
 
 def _clean(text: str) -> str:
