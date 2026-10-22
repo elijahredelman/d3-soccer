@@ -32,6 +32,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
       - run: uv sync --no-dev
+      # Headless Chromium for team sites behind a JavaScript bot check (conference scrapes only).
+      - if: ${{ (inputs.job || (github.event.schedule == '41 9 * * *' && 'all' || 'national')) != 'national' }}
+        run: uv run playwright install --with-deps chromium
 
       - name: Scrape
         env:
