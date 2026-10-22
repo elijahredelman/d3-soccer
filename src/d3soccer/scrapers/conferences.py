@@ -16,16 +16,10 @@ from __future__ import annotations
 
 import re
 
-import requests
 from bs4 import BeautifulSoup
 
 from d3soccer.models import StandingRow, Team
-
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; D3SoccerAppBot/0.1; contact: elijahredelman@gmail.com)"
-}
-TIMEOUT = 30
-
+from d3soccer.scrapers import http
 
 # ---------------------------------------------------------------------
 # NESCAC -- New England Small College Athletic Conference
@@ -640,14 +634,16 @@ ODAC_TEAMS = [
     Team(name="Shenandoah University", conference="ODAC", site_domain="suhornets.com"),
     Team(name="Washington and Lee University", conference="ODAC", site_domain="generalssports.com"),
     Team(name="Virginia Wesleyan University", conference="ODAC", site_domain="vwuathletics.com"),
+    Team(name="Hampden-Sydney College", conference="ODAC", site_domain="hscathletics.com"),
+    Team(name="Averett University", conference="ODAC", site_domain="averettcougars.com"),
 ]
 # Note: Hollins and Sweet Briar are ODAC members but women's colleges, no men's soccer --
 # excluded. Virginia Wesleyan is renaming to Batten University (effective ~mid-2026) -- same
 # program, domain still vwuathletics.com as of this search (2026-10-06); rename the Team entry
-# once the athletics site itself switches domains, don't rename pre-emptively. Still could not
-# find dedicated athletics domains for Averett, Hampden-Sydney, or Randolph College (all three
-# appear to run on PrestoSports/d3hoops-hosted pages rather than their own branded domain, or
-# search just didn't surface it) -- add once confirmed via odaconline.com team links.
+# once the athletics site itself switches domains, don't rename pre-emptively.
+# Hampden-Sydney's domain is confirmed (its Sidearm stats PDFs live under hscathletics.com);
+# Averett's is the school's known athletics domain but its platform is unverified. Still
+# missing: Randolph College (no athletics domain surfaced by search).
 
 # ---------------------------------------------------------------------
 # Southern Athletic Association (SAA)
@@ -820,6 +816,7 @@ NACC_TEAMS = [
     Team(name="Wisconsin Lutheran College", conference="NACC", site_domain="wlcsports.com"),
     Team(name="Concordia University Chicago", conference="NACC", site_domain="cucougars.com"),
     Team(name="Marian University (WI)", conference="NACC", site_domain="sabreathletics.com"),
+    Team(name="Concordia University Wisconsin", conference="NACC", site_domain="cuwfalcons.com"),
 ]
 # Note: 13-school NACC membership confirmed live. The 9 domains above (Benedictine through
 # Marian WI) found via web search 2026-10-06, not independently fetched/verified -- spot-check
@@ -829,10 +826,8 @@ NACC_TEAMS = [
 # Still missing: Rockford University (no dedicated athletics domain surfaced by search --
 # may run under rockford.edu itself or a PrestoSports subdomain, needs manual confirmation).
 #
-# Concordia Wisconsin (cuwfalcons.com) was intentionally left OUT of the list above: search
-# results turned up a "CUW to CCIW" item suggesting Concordia Wisconsin may have moved from
-# NACC to CCIW for 2025-26, which would mean it's already in CCIW_TEAMS, not here -- this needs
-# verifying before adding it to either list, to avoid double-counting or miscounting it.
+# Concordia Wisconsin is in the NACC for men's soccer: it's in the 2026 NACC standings and
+# preseason poll (cuwfalcons.com, 2026-08-26), and not in CCIW_TEAMS.
 
 # ---------------------------------------------------------------------
 # College Conference of Illinois and Wisconsin (CCIW)
@@ -1169,9 +1164,7 @@ def fetch_standings(conference_key: str) -> list[StandingRow]:
         raise ValueError(
             f"{conference_key} has no static standings URL -- use its dedicated fetch function"
         )
-    resp = requests.get(cfg["standings_url"], headers=HEADERS, timeout=TIMEOUT)
-    resp.raise_for_status()
-    return _parse_sidearm_standings_table(resp.text, conference_key)
+    return _parse_sidearm_standings_table(http.get(cfg["standings_url"]).text, conference_key)
 
 
 def fetch_nescac_standings() -> list[StandingRow]:
@@ -1184,15 +1177,12 @@ def fetch_nescac_standings() -> list[StandingRow]:
     """
     standings_id = NESCAC_FALLBACK_STANDINGS_ID
     try:
-        hub_resp = requests.get("https://nescac.com/sports/msoc", headers=HEADERS, timeout=TIMEOUT)
-        hub_resp.raise_for_status()
+        hub_resp = http.get("https://nescac.com/sports/msoc")
         match = re.search(r"standings\.aspx\?standings=(\d+)", hub_resp.text)
         if match:
             standings_id = int(match.group(1))
-    except requests.RequestException:
+    except http.RequestException:
         pass  # fall back to the hardcoded id
 
     url = f"https://nescac.com/standings.aspx?standings={standings_id}"
-    resp = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
-    resp.raise_for_status()
-    return _parse_sidearm_standings_table(resp.text, "NESCAC")
+    return _parse_sidearm_standings_table(http.get(url).text, "NESCAC")

@@ -10,7 +10,8 @@ site reads directly:
   REAL_CONFERENCES  [conference names present, in a sensible display order]
   REAL_LEADERS      individual national leader category -> raw NCAA-API payload
   REAL_TEAM_LEADERS team-level national leader category -> raw NCAA-API payload
-  REAL_NPI          raw NCAA-API NPI payload ({updated, data: [...]}) or null
+  REAL_NPI          pasted NPI table (data/npi.txt) or the raw NCAA-API NPI payload
+                    ({updated, data: [...]}), or null
   REAL_SCOREBOARD   [ {status, home, away, hs, as, conf, time, clock} ] for today
   REAL_USC_POLL     [ {rank, team, rec} ] United Soccer Coaches Top 25
   REAL_META         {conferencesDate, nationalFetchedAt, nationalDate, built}
@@ -24,7 +25,7 @@ from datetime import UTC, datetime
 
 from d3soccer import teamnames
 from d3soccer.config import APP_DATA_JS
-from d3soccer.pipelines import snapshots
+from d3soccer.pipelines import npi_paste, snapshots
 
 DISPLAY_ORDER = [
     "SCIAC",
@@ -269,6 +270,34 @@ def compact_usc_poll(rows):
     return out
 
 
+def compact_npi(payload):
+    """
+    The NCAA's regional rankings come as one list per region ("Region I" header
+    rows, each region ranked from 1). Merge them into one list ordered by NPI value,
+    keeping each team's region, so the NPI tab doesn't show a #1 per region.
+    """
+    if not payload or not payload.get("data"):
+        return payload
+    rows, region = [], None
+    for row in payload["data"]:
+        values = [v for v in row.values() if v]
+        if len(values) == 1 and str(values[0]).lower().startswith("region"):
+            region = values[0]
+        else:
+            rows.append({k: v for k, v in row.items() if k.upper() != "RANK"} | {"REGION": region})
+    if region is None:
+        return payload  # already a single ranked list
+
+    def npi(row):
+        try:
+            return float(row.get("NPI") or "")
+        except ValueError:
+            return float("-inf")
+
+    rows.sort(key=npi, reverse=True)
+    return {**payload, "data": [{"RANK": str(i), **r} for i, r in enumerate(rows, 1)]}
+
+
 def _js(name, value):
     return f"const {name} = " + json.dumps(value, separators=(",", ":"), ensure_ascii=False) + ";\n"
 
@@ -302,7 +331,8 @@ def run():
     ordered_confs = [c for c in DISPLAY_ORDER if c in present]
     ordered_confs += sorted(present - set(ordered_confs))
 
-    npi = national.get("npi_rankings")
+    # The pasted official table wins over the feed, which has been empty all season.
+    npi = npi_paste.load() or compact_npi(national.get("npi_rankings"))
     meta = {
         "conferencesDate": conferences_date(),
         "nationalFetchedAt": national.get("fetched_at"),

@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import re
 
-import requests
 from bs4 import BeautifulSoup
 
 from d3soccer.models import StandingRow, Team
+from d3soccer.scrapers import http
 
 CONFERENCE_NAME = "SCIAC"
 
@@ -30,10 +30,6 @@ TEAMS: list[Team] = [
 ]
 
 STANDINGS_URL = "https://thesciac.org/standings.aspx?path=msoc"
-
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; D3SoccerAppBot/0.1; contact: elijahredelman@gmail.com)"
-}
 
 
 def _first_matching(row_map: dict, *candidates: str) -> str | None:
@@ -77,9 +73,7 @@ def fetch_standings() -> list[StandingRow]:
     Pacific") -- the site appends season-context notes directly into the
     School cell's text with no separator.
     """
-    resp = requests.get(STANDINGS_URL, headers=HEADERS, timeout=15)
-    resp.raise_for_status()
-    soup = BeautifulSoup(resp.text, "lxml")
+    soup = BeautifulSoup(http.get(STANDINGS_URL).text, "lxml")
 
     table = soup.select_one("table.sidearm-standings-table")
     if not table:
