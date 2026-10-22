@@ -71,7 +71,7 @@ def _clean(text: str) -> str:
 def fetch_roster(site_domain: str, team_name: str, sport_slug: str = "mens-soccer") -> list[Player]:
     url = f"https://{site_domain}/sports/{sport_slug}/roster"
     soup = _get(url)
-    players = _parse_roster_html(soup, team_name)
+    players = _parse_roster_html(soup, team_name) or _parse_roster_table(soup, team_name)
     if not players:
         raise _nothing_found(soup, url)
     return players
@@ -121,7 +121,7 @@ def fetch_schedule(
 ) -> list[Game]:
     url = f"https://{site_domain}/sports/{sport_slug}/schedule/{year}"
     soup = _get(url)
-    games = _parse_schedule_html(soup, team_name)
+    games = _parse_schedule_html(soup, team_name) or _parse_schedule_table(soup, team_name)
     if not games:
         raise _nothing_found(soup, url)
     return games
@@ -173,6 +173,88 @@ def _parse_schedule_html(soup: BeautifulSoup, team_name: str) -> list[Game]:
                 result=result or None,
                 venue=venue or None,
                 time=time or None,
+            )
+        )
+    return games
+
+
+# ---------------------------------------------------------------------
+# Table layouts
+# ---------------------------------------------------------------------
+# Some Sidearm sites are set to show the roster or schedule as a plain table
+# instead of cards (seen on Baldwin Wallace's roster and Rhodes' schedule). Header
+# text varies a little, so columns are found by pattern.
+
+
+def _table_rows(soup: BeautifulSoup, required: list[str]) -> list[dict[str, str]]:
+    """Rows (header -> cell text) of the first table whose headers match every pattern."""
+    for table in soup.find_all("table"):
+        headers = [_clean(th.get_text(" ", strip=True)) for th in table.select("thead th")]
+        if not all(any(re.search(p, h, re.I) for h in headers) for p in required):
+            continue
+        rows = []
+        for tr in table.select("tbody tr"):
+            cells = [_clean(c.get_text(" ", strip=True)) for c in tr.find_all(["td", "th"])]
+            if len(cells) >= 2:
+                rows.append(dict(zip(headers, cells)))
+        return rows
+    return []
+
+
+def _col(row: dict[str, str], *patterns: str) -> str:
+    for p in patterns:
+        for h, v in row.items():
+            if re.search(p, h, re.I):
+                return v
+    return ""
+
+
+def _parse_roster_table(soup: BeautifulSoup, team_name: str) -> list[Player]:
+    players = []
+    for row in _table_rows(soup, [r"name", r"^(#|no\.?|num)"]):
+        name, number = _col(row, r"name"), _col(row, r"^(#|no\.?|num)")
+        if not name:
+            continue
+        players.append(
+            Player(
+                team=team_name,
+                number=number,
+                name=name,
+                position=_col(row, r"^pos"),
+                class_year=_col(row, r"^(cl|yr|year|class|academic)"),
+                height=_col(row, r"^(ht|height)") or None,
+                hometown=_col(row, r"hometown") or None,
+                high_school=_col(row, r"high school|previous") or None,
+            )
+        )
+    return players
+
+
+def _parse_schedule_table(soup: BeautifulSoup, team_name: str) -> list[Game]:
+    games = []
+    for row in _table_rows(soup, [r"^date", r"opponent"]):
+        opponent = _col(row, r"opponent")
+        if not opponent:
+            continue
+        at = _col(row, r"^(at|h/a|home)")
+        where = _col(row, r"^location")
+        location = (
+            "away"
+            if at.lower() in ("at", "away", "a") or opponent.lower().startswith("at ")
+            else "home"
+            if at.lower() in ("vs", "vs.", "home", "h")
+            else "unknown"
+        )
+        games.append(
+            Game(
+                team=team_name,
+                date=_col(row, r"^date"),
+                opponent=re.sub(r"^(at|vs\.?)\s+", "", opponent, flags=re.I).rstrip(" *"),
+                location=location,
+                conference_game="*" in opponent,
+                result=_col(row, r"^result") or None,
+                venue=where or None,
+                time=_col(row, r"^time") or None,
             )
         )
     return games
