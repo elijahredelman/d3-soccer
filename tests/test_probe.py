@@ -61,15 +61,31 @@ def test_failed_urls_skips_403_and_maps_names(snapshot_dir):
 
 
 def test_npi_falls_through_to_first_slug_with_rows(monkeypatch):
+    empty, missing, good = ncaa_national.NPI_SLUGS[:3]
+
     def get(url, **kwargs):
-        if url.endswith("/national-rankings-npi"):
+        slug = url.rsplit("/", 1)[1]
+        if slug == empty:
             return FakeResponse(json.dumps({"title": "old", "data": []}), "application/json")
-        if url.endswith("/ncaa-mens-soccer-npi"):
+        if slug == missing:
             return FakeResponse("", status=404)
-        return FakeResponse(
-            json.dumps({"title": "NPI", "data": [{"Rank": "1"}]}), "application/json"
-        )
+        rows = [{"RANK": "1", "SCHOOL": slug}]
+        return FakeResponse(json.dumps({"title": "NPI", "data": rows}), "application/json")
 
     monkeypatch.setattr(ncaa_national.requests, "get", get)
     payload = ncaa_national.fetch_npi_rankings()
-    assert payload["source_slug"] == "npi" and payload["data"] == [{"Rank": "1"}]
+    assert payload["source_slug"] == good and payload["data"][0]["SCHOOL"] == good
+
+
+def test_npi_tries_regional_rankings_first():
+    # ncaa.com/rankings/soccer-men/d3 redirects there and it carries the NPI column.
+    assert ncaa_national.NPI_SLUGS[0] == "regional-rankings"
+
+
+def test_describe_dumps_selector_and_tiny_body(monkeypatch):
+    html = "<html><body><table><tbody><tr><td>X</td></tr></tbody></table></body></html>"
+    monkeypatch.setattr(probe.requests, "get", lambda *a, **k: FakeResponse(html, url="u"))
+    out = "\n".join(probe.describe("u", dump=["tbody tr", "li.nope"]))
+    assert "dump 'tbody tr': '<tr><td>X</td></tr>'" in out
+    assert "dump 'li.nope': no match" in out
+    assert "body: '<html>" in out

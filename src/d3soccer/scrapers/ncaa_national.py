@@ -87,10 +87,12 @@ TEAM_STAT_CATEGORIES = {
 }
 
 
-# ncaa-api mirrors ncaa.com URL paths. The first slug returned an empty table all of
-# 2026-09/10 even after NPI was published, so try the other likely names too; the
-# national job logs which one answered.
+# ncaa-api mirrors ncaa.com URL paths. ncaa.com/rankings/soccer-men/d3 redirects to
+# "regional-rankings", whose table is RANK | SCHOOL | IN-DIVISION RECORD | NPI (81 rows,
+# confirmed by the Probe sites workflow on 2026-10-22). "national-rankings-npi" stayed
+# empty all season. The rest are fallbacks; the national job logs which one answered.
 NPI_SLUGS = [
+    "regional-rankings",
     "national-rankings-npi",
     "ncaa-mens-soccer-npi",
     "npi",

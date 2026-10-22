@@ -25,7 +25,7 @@ def cmd_build(args: argparse.Namespace) -> None:
 def cmd_probe(args: argparse.Namespace) -> None:
     from d3soccer.pipelines import probe
 
-    probe.run(args.urls, failed=args.failed, links=args.links)
+    probe.run(args.urls, failed=args.failed, links=args.links, dump=args.dump)
 
 
 def cmd_serve(args: argparse.Namespace) -> None:
@@ -61,6 +61,9 @@ def build_parser() -> argparse.ArgumentParser:
         "--failed", action="store_true", help="probe every non-403 failure in the latest snapshot"
     )
     probe.add_argument("--links", help="also list hrefs containing this text")
+    probe.add_argument(
+        "--dump", action="append", help="print the HTML of the first match of this CSS selector"
+    )
     probe.set_defaults(func=cmd_probe)
 
     serve = sub.add_parser("serve", help="serve the web/ site locally")

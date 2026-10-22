@@ -5,6 +5,7 @@ reach the sites (the Probe sites workflow) instead of guessing at selectors.
     uv run d3soccer probe https://example.edu/sports/mens-soccer/roster
     uv run d3soccer probe --failed      # every non-403 failure in the latest snapshot
     uv run d3soccer probe URL --links rankings/soccer-men   # also list matching hrefs
+    uv run d3soccer probe URL --dump "tbody tr"             # print the first match's HTML
 
 For HTML it reports the platform, the counts of the selectors our Sidearm
 parsers rely on, every table's classes and header row, and the most common
@@ -39,7 +40,7 @@ PARSER_SELECTORS = [
 INTERESTING_CLASS = re.compile(r"roster|schedule|standing|stats|player|game", re.I)
 
 
-def describe(url: str, links: str | None = None) -> list[str]:
+def describe(url: str, links: str | None = None, dump: list[str] | None = None) -> list[str]:
     try:
         resp = requests.get(url, headers=HEADERS, timeout=20)
     except requests.RequestException as e:
@@ -69,6 +70,8 @@ def describe(url: str, links: str | None = None) -> list[str]:
         return out
 
     html = resp.text
+    if len(html) < 1500:
+        out.append(f"  body: {html!r}")
     soup = BeautifulSoup(html, "lxml")
     title = soup.title.get_text(strip=True) if soup.title else ""
     generator = soup.find("meta", attrs={"name": "generator"})
@@ -108,6 +111,9 @@ def describe(url: str, links: str | None = None) -> list[str]:
     apis = sorted(set(re.findall(r"""["'](/(?:api|services)/[^"'\s]{3,120})["']""", html)))[:8]
     if apis:
         out.append(f"  api paths in page: {apis}")
+    for selector in dump or []:
+        el = soup.select_one(selector)
+        out.append(f"  dump {selector!r}: " + (repr(str(el)[:2500]) if el else "no match"))
     if links:
         hrefs = sorted({a["href"] for a in soup.find_all("a", href=True) if links in a["href"]})
         out.append(f"  links containing {links!r} ({len(hrefs)}): {hrefs[:25]}")
@@ -152,11 +158,13 @@ def failed_urls() -> list[str]:
     return list(dict.fromkeys(urls))
 
 
-def run(urls: list[str], failed: bool = False, links: str | None = None) -> None:
+def run(
+    urls: list[str], failed: bool = False, links: str | None = None, dump: list[str] | None = None
+) -> None:
     targets = list(urls) + (failed_urls() if failed else [])
     if not targets:
         raise SystemExit("Nothing to probe: pass URLs or --failed.")
     for url in targets:
         print(url)
-        print("\n".join(describe(url, links)))
+        print("\n".join(describe(url, links, dump)))
         print()

@@ -45,7 +45,8 @@ from d3soccer.models import Game, Player
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; D3SoccerAppBot/0.1; contact: elijahredelman@gmail.com)"
 }
-TIMEOUT = 15
+# Schedule pages run 400-850 KB; at 15s several timed out on GitHub's runners.
+TIMEOUT = 30
 
 
 def _get(url: str) -> BeautifulSoup:
@@ -84,9 +85,11 @@ def _parse_roster_html(soup: BeautifulSoup, team_name: str) -> list[Player]:
             position = _clean(first_span.get_text(strip=True)) if first_span else ""
 
         name = txt(".sidearm-roster-player-name h3")
+        # Some sites (e.g. Baldwin Wallace) don't list jersey numbers at all, so only
+        # the name is required. Staff are in a separate table, not these cards.
         number = txt(".sidearm-roster-player-jersey-number")
-        if not name or not number:
-            continue  # skip coach/staff cards or malformed entries
+        if not name:
+            continue  # malformed entry
 
         players.append(
             Player(
