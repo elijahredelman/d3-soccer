@@ -87,16 +87,45 @@ TEAM_STAT_CATEGORIES = {
 }
 
 
+# ncaa-api mirrors ncaa.com URL paths. ncaa.com/rankings/soccer-men/d3 redirects to
+# "regional-rankings", whose table is RANK | SCHOOL | IN-DIVISION RECORD | NPI (81 rows,
+# confirmed by the Probe sites workflow on 2026-10-22). "national-rankings-npi" stayed
+# empty all season. The rest are fallbacks; the national job logs which one answered.
+NPI_SLUGS = [
+    "regional-rankings",
+    "national-rankings-npi",
+    "ncaa-mens-soccer-npi",
+    "npi",
+    "ncaa-npi",
+    "national-rankings",
+]
+
+
 def fetch_npi_rankings(division: str = "d3") -> dict:
     """
-    NPI rankings. Confirmed to return an empty `data` array as of
-    2026-09-18 -- check again as the season progresses; NPI typically
-    starts publishing a few weeks in, not week 1.
+    NPI rankings: the first slug in NPI_SLUGS whose table has rows, or the
+    first successful (empty) response if none do.
     """
-    url = f"{NCAA_API_BASE}/rankings/soccer-men/{division}/national-rankings-npi"
-    resp = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
-    resp.raise_for_status()
-    return resp.json()
+    first_ok = None
+    errors = []
+    for slug in NPI_SLUGS:
+        url = f"{NCAA_API_BASE}/rankings/soccer-men/{division}/{slug}"
+        try:
+            resp = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
+            resp.raise_for_status()
+            payload = resp.json()
+        except (requests.RequestException, ValueError) as e:
+            errors.append(f"{slug}: {e}")
+            continue
+        rows = len(payload.get("data") or []) if isinstance(payload, dict) else 0
+        print(f"  NPI {slug}: {rows} rows ({payload.get('title', '')!r})")
+        if rows:
+            payload["source_slug"] = slug
+            return payload
+        first_ok = first_ok or payload
+    if first_ok is None:
+        raise requests.RequestException("; ".join(errors))
+    return first_ok
 
 
 def fetch_united_soccer_coaches_poll() -> list[dict]:

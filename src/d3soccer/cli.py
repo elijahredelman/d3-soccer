@@ -22,6 +22,12 @@ def cmd_build(args: argparse.Namespace) -> None:
     app_data.run()
 
 
+def cmd_probe(args: argparse.Namespace) -> None:
+    from d3soccer.pipelines import probe
+
+    probe.run(args.urls, failed=args.failed, links=args.links, dump=args.dump)
+
+
 def cmd_serve(args: argparse.Namespace) -> None:
     import functools
     import http.server
@@ -48,6 +54,17 @@ def build_parser() -> argparse.ArgumentParser:
 
     build = sub.add_parser("build", help="regenerate web/app_data.js from the latest snapshots")
     build.set_defaults(func=cmd_build)
+
+    probe = sub.add_parser("probe", help="fetch pages and describe their markup, to fix parsers")
+    probe.add_argument("urls", nargs="*")
+    probe.add_argument(
+        "--failed", action="store_true", help="probe every non-403 failure in the latest snapshot"
+    )
+    probe.add_argument("--links", help="also list hrefs containing this text")
+    probe.add_argument(
+        "--dump", action="append", help="print the HTML of the first match of this CSS selector"
+    )
+    probe.set_defaults(func=cmd_probe)
 
     serve = sub.add_parser("serve", help="serve the web/ site locally")
     serve.add_argument("--port", type=int, default=8000)

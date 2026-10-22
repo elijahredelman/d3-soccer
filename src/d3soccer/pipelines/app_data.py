@@ -270,6 +270,34 @@ def compact_usc_poll(rows):
     return out
 
 
+def compact_npi(payload):
+    """
+    The NCAA's regional rankings come as one list per region ("Region I" header
+    rows, each region ranked from 1). Merge them into one list ordered by NPI value,
+    keeping each team's region, so the NPI tab doesn't show a #1 per region.
+    """
+    if not payload or not payload.get("data"):
+        return payload
+    rows, region = [], None
+    for row in payload["data"]:
+        values = [v for v in row.values() if v]
+        if len(values) == 1 and str(values[0]).lower().startswith("region"):
+            region = values[0]
+        else:
+            rows.append({k: v for k, v in row.items() if k.upper() != "RANK"} | {"REGION": region})
+    if region is None:
+        return payload  # already a single ranked list
+
+    def npi(row):
+        try:
+            return float(row.get("NPI") or "")
+        except ValueError:
+            return float("-inf")
+
+    rows.sort(key=npi, reverse=True)
+    return {**payload, "data": [{"RANK": str(i), **r} for i, r in enumerate(rows, 1)]}
+
+
 def _js(name, value):
     return f"const {name} = " + json.dumps(value, separators=(",", ":"), ensure_ascii=False) + ";\n"
 
@@ -304,7 +332,7 @@ def run():
     ordered_confs += sorted(present - set(ordered_confs))
 
     # The pasted official table wins over the feed, which has been empty all season.
-    npi = npi_paste.load() or national.get("npi_rankings")
+    npi = npi_paste.load() or compact_npi(national.get("npi_rankings"))
     meta = {
         "conferencesDate": conferences_date(),
         "nationalFetchedAt": national.get("fetched_at"),

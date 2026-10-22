@@ -94,3 +94,23 @@ def test_compact_usc_poll_drops_previous_rank_stored_as_record():
         {"rank": 2, "team": "Tufts", "record": "8-1-2"},
     ]
     assert [r["rec"] for r in app_data.compact_usc_poll(rows)] == ["", "8-1-2"]
+
+
+def test_compact_npi_merges_regional_lists_by_npi():
+    payload = {
+        "title": "Regional Rankings",
+        "data": [
+            {"RANK": "Region I", "SCHOOL": "", "NPI": ""},
+            {"RANK": "1", "SCHOOL": "Middlebury", "NPI": "59.945"},
+            {"RANK": "2", "SCHOOL": "Tufts", "NPI": "58.100"},
+            {"RANK": "Region II", "SCHOOL": "", "NPI": ""},
+            {"RANK": "1", "SCHOOL": "Messiah", "NPI": "59.000"},
+        ],
+    }
+    out = app_data.compact_npi(payload)
+    assert [(r["RANK"], r["SCHOOL"], r["REGION"]) for r in out["data"]] == [
+        ("1", "Middlebury", "Region I"),
+        ("2", "Messiah", "Region II"),
+        ("3", "Tufts", "Region I"),
+    ]
+    assert app_data.compact_npi(None) is None
