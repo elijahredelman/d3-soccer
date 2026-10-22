@@ -24,7 +24,7 @@ from d3soccer.models import StandingRow, Team
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (compatible; D3SoccerAppBot/0.1; contact: elijahredelman@gmail.com)"
 }
-TIMEOUT = 15
+TIMEOUT = 30
 
 
 # ---------------------------------------------------------------------
@@ -902,7 +902,8 @@ SLIAC_TEAMS = [
         site_domain="www.eurekareddevils.com",
         sport_slug="msoc",
     ),
-    Team(name="Greenville University", conference="SLIAC", site_domain="athletics.greenville.edu"),
+    # athletics.greenville.edu now redirects to this domain's home page (probe, 2026-10-22).
+    Team(name="Greenville University", conference="SLIAC", site_domain="greenvillepanthers.com"),
     Team(name="Lyon College", conference="SLIAC", site_domain="lyonscots.com"),
     Team(
         name="Mississippi University for Women", conference="SLIAC", site_domain="owlsathletics.com"
@@ -1076,12 +1077,25 @@ CONFERENCES = {
 }
 
 
+def _norm(header: str) -> str:
+    return " ".join(header.split()).lower()
+
+
 def _first_matching(row_map: dict, *candidates: str) -> str | None:
-    """Case-insensitive lookup trying several possible header spellings."""
-    lower_map = {k.lower(): v for k, v in row_map.items()}
+    """Case- and whitespace-insensitive lookup trying several possible header spellings."""
+    lower_map = {_norm(k): v for k, v in row_map.items()}
     for c in candidates:
-        if c.lower() in lower_map:
-            return lower_map[c.lower()]
+        if _norm(c) in lower_map:
+            return lower_map[_norm(c)]
+    return None
+
+
+def _conf_record_fallback(row_map: dict) -> str | None:
+    """A "<Conference> Record" column, e.g. Atlantic East's "AEC Record"."""
+    for header, value in row_map.items():
+        h = _norm(header)
+        if h.endswith("record") and "overall" not in h:
+            return value
     return None
 
 
@@ -1113,6 +1127,13 @@ def _parse_sidearm_standings_table(html: str, conference_name: str) -> list[Stan
     for h in raw_headers:
         if not headers or headers[-1] != h:
             headers.append(h)
+    # Keep repeated names distinct ("Win %" for conference, then "Win % #2" for overall)
+    # so the first one isn't overwritten when zipped into a dict.
+    seen: dict[str, int] = {}
+    for i, h in enumerate(headers):
+        seen[h] = seen.get(h, 0) + 1
+        if seen[h] > 1:
+            headers[i] = f"{h} #{seen[h]}"
 
     rows: list[StandingRow] = []
     for tr in table.select("tbody tr"):
@@ -1121,16 +1142,21 @@ def _parse_sidearm_standings_table(html: str, conference_name: str) -> list[Stan
         if len(vals) < 2:
             continue
         row_map = dict(zip(headers, vals))
-        team_name = _first_matching(row_map, "School", "Team")
+        # Team column names seen: School, Team, Institution (NAC), Schools (Atlantic
+        # East), "School Name With Logo (link to Schedule)" (SLIAC). It is always first.
+        team_name = _first_matching(row_map, "School", "Team", "Institution", "Schools") or vals[0]
         if not team_name:
             continue
         rows.append(
             StandingRow(
                 conference=conference_name,
                 team=team_name,
-                conf_record=_first_matching(row_map, "CONF. W-L", "Conf", "Conference") or "",
-                overall_record=_first_matching(row_map, "W-L", "Overall") or "",
-                conf_points=_first_matching(row_map, "CONF. PCT", "CPct.", "Pct."),
+                conf_record=_first_matching(row_map, "CONF. W-L", "Conf", "Conference", "C-REC")
+                or _conf_record_fallback(row_map)
+                or "",
+                overall_record=_first_matching(row_map, "W-L", "Overall", "O-REC", "Overall Record")
+                or "",
+                conf_points=_first_matching(row_map, "CONF. PCT", "CPct.", "C-W%", "Win %", "Pct."),
             )
         )
     return rows
