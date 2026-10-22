@@ -8,7 +8,6 @@ dependencies = [
     "beautifulsoup4>=4.12",
     "curl-cffi>=0.7",
     "lxml>=5.0",
-    "playwright>=1.48",
     "requests>=2.31",
 ]
 
