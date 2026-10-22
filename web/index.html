@@ -157,6 +157,7 @@ a{ color:inherit; text-decoration:none; }
 }
 :root:not([data-theme="light"]) .roster-row .pos, :root[data-theme="dark"] .roster-row .pos{ color:#e7c877; }
 
+.npi-region{ padding:14px 14px 6px; font-size:.72rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--line); }
 .empty-hint{ padding:22px 14px; text-align:center; color:var(--muted); font-size:.85rem; }
 
 /* ---- bottom tab bar ---- */
@@ -584,10 +585,10 @@ function renderRankUC(){
     : `<div class="empty-hint">The coaches' poll couldn't be loaded.</div>`;
 }
 
-// NPI rows come straight from the NCAA feed; pick the rank and team columns by
-// name and show the remaining columns (record, NPI value, ...) as the subtitle.
+// NPI rows come straight from the NCAA feed (ncaa.com "regional-rankings"): a row with a
+// rank but no school ("Region I") starts a region, and ranks restart within each one.
 function renderRankNPI(){
-  document.getElementById("rankLabel").textContent = "National NPI Rankings";
+  document.getElementById("rankLabel").textContent = "NCAA Regional Rankings (NPI)";
   if (!REAL_NPI) {
     document.getElementById("rankNote").textContent = "Official NCAA rankings, published weekly during the season.";
     document.getElementById("rankList").innerHTML = `<div class="empty-hint">The NCAA hasn't published NPI rankings yet.<br>Check the United Soccer Coaches tab in the meantime.</div>`;
@@ -596,16 +597,25 @@ function renderRankNPI(){
   document.getElementById("rankNote").textContent = "Official NCAA rankings" +
     (REAL_NPI.updated ? " · " + REAL_NPI.updated : "") + ".";
   const pick = (row, keys) => keys.find(k => k in row);
-  document.getElementById("rankList").innerHTML = REAL_NPI.data.map((row,i)=>{
-    const rankKey = pick(row, ["Rank", "RANK", "rank"]);
-    const teamKey = pick(row, ["School", "Team", "SCHOOL", "TEAM", "Name", "school", "team"]);
-    const extra = Object.entries(row)
-      .filter(([k,v]) => k !== rankKey && k !== teamKey && v !== "" && v != null)
-      .map(([k,v]) => `${k} ${v}`).join(" · ");
-    return rankRow(rankKey ? row[rankKey] : i+1, teamKey ? row[teamKey] : "", extra, i);
-  }).join("");
+  let html = "", i = 0;
+  for (const row of REAL_NPI.data) {
+    const rankKey = pick(row, ["RANK", "Rank", "rank"]);
+    const teamKey = pick(row, ["SCHOOL", "School", "TEAM", "Team", "Name", "school", "team"]);
+    const team = teamKey ? row[teamKey] : "";
+    if (!team) {  // region header row
+      html += `<div class="npi-region">${row[rankKey] || ""}</div>`;
+      i = 0;
+      continue;
+    }
+    const recKey = Object.keys(row).find(k => /record/i.test(k));
+    const npiKey = pick(row, ["NPI", "npi"]);
+    const extra = recKey || npiKey
+      ? [recKey && row[recKey], npiKey && row[npiKey] && "NPI " + row[npiKey]].filter(Boolean).join(" · ")
+      : Object.entries(row).filter(([k,v]) => k !== rankKey && k !== teamKey && v).map(([k,v]) => `${k} ${v}`).join(" · ");
+    html += rankRow(rankKey ? row[rankKey] : i+1, team, extra, i++);
+  }
+  document.getElementById("rankList").innerHTML = html;
 }
-
 // Per-conference site domain for the "Real, live from X" note. Falls back
 // to the first team's own athletics domain when we don't have a specific
 // conference-site mapping for this conference.
