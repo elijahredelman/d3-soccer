@@ -11,10 +11,11 @@ def test_roster_table_layout():
     page = soup(
         """<table><thead><tr><th>#</th><th>Name</th><th>Pos.</th><th>Cl.</th><th>Ht.</th>
         <th>Hometown / High School</th></tr></thead><tbody>
-        <tr><td>7</td><th>Alex Kim</th><td>MF</td><td>Jr.</td><td>5'10"</td><td>Berea, Ohio</td></tr>
+        <tr><td>7</td><th>Alex Kim</th><td>MF</td><td>Jr.</td><td>5'10"</td><td>Berea, Ohio / Midpark</td></tr>
         </tbody></table>"""
     )
     [p] = sidearm._parse_roster_table(page, "Baldwin Wallace")
+    assert p.high_school == "Midpark"
     assert (p.number, p.name, p.position, p.class_year, p.height, p.hometown) == (
         "7",
         "Alex Kim",

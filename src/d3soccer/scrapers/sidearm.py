@@ -215,6 +215,9 @@ def _parse_roster_table(soup: BeautifulSoup, team_name: str) -> list[Player]:
         name, number = _col(row, r"name"), _col(row, r"^(#|no\.?|num)")
         if not name:
             continue
+        hometown, high_school = _col(row, r"hometown"), _col(row, r"high school|previous")
+        if hometown == high_school and " / " in hometown:  # one "Hometown / High School" column
+            hometown, high_school = hometown.split(" / ", 1)
         players.append(
             Player(
                 team=team_name,
@@ -223,8 +226,8 @@ def _parse_roster_table(soup: BeautifulSoup, team_name: str) -> list[Player]:
                 position=_col(row, r"^pos"),
                 class_year=_col(row, r"^(cl|yr|year|class|academic)"),
                 height=_col(row, r"^(ht|height)") or None,
-                hometown=_col(row, r"hometown") or None,
-                high_school=_col(row, r"high school|previous") or None,
+                hometown=hometown or None,
+                high_school=high_school or None,
             )
         )
     return players
