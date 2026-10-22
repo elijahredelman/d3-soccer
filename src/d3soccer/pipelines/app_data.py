@@ -22,6 +22,7 @@ import json
 import re
 from datetime import UTC, datetime
 
+from d3soccer import teamnames
 from d3soccer.config import APP_DATA_JS
 from d3soccer.pipelines import snapshots
 
@@ -72,10 +73,11 @@ DISPLAY_ORDER = [
 
 def load_all():
     """
-    Returns (teams, standings_by_conf, sites) merged from the newest conference
-    snapshots, newer files overriding older ones.
+    Returns (teams, standings_by_conf, sites, conf_teams) merged from the newest
+    conference snapshots, newer files overriding older ones. conf_teams maps each
+    conference to its registry team names.
     """
-    teams, standings_by_conf, sites = {}, {}, {}
+    teams, standings_by_conf, sites, conf_teams = {}, {}, {}, {}
     for path in snapshots.latest_per_family(snapshots.CONFERENCE_FAMILIES):
         print(f"Loading {path}")
         snap = snapshots.load(path)
@@ -88,7 +90,8 @@ def load_all():
                 teams[name] = t
                 sites[name] = t.get("domain")
             standings_by_conf[conf_name] = cdata.get("standings", [])
-    return teams, standings_by_conf, sites
+            conf_teams[conf_name] = list(cdata.get("teams", {}))
+    return teams, standings_by_conf, sites, conf_teams
 
 
 def load_national():
@@ -157,20 +160,72 @@ def compact_stats(players):
     return {"scorers": scorers[:12], "keepers": keepers[:4]}
 
 
-def compact_standings(rows):
+RESULT = re.compile(r"^([WLT]),")
+
+
+def schedule_records(team: str, games: list[dict], conf_teams: list[str]) -> tuple[str, str]:
+    """(overall, conference) W-L-T from a team's scraped schedule results."""
+    overall, conf = [0, 0, 0], [0, 0, 0]
+    others = [t for t in conf_teams if t != team]
+    for g in games:
+        m = RESULT.match(g.get("result") or "")
+        if not m:
+            continue
+        i = "WLT".index(m.group(1))
+        overall[i] += 1
+        if teamnames.match_one(g.get("opponent", ""), others):
+            conf[i] += 1
+
+    def fmt(r):
+        return "-".join(map(str, r if r[2] else r[:2])) if any(r) else ""
+
+    return fmt(overall), fmt(conf)
+
+
+def compact_standings(rows, teams=None):
+    """
+    Standings rows for the site, named with our registry names so the team page
+    finds that team's roster/schedule/stats. `teams` (registry name -> scraped
+    team data) also fills in what the conference page lacked: registry teams
+    missing from the standings, and conference records the parser couldn't read,
+    both computed from scraped schedule results.
+    """
+    teams = teams or {}
+    registry = list(teams)
+    rows = [r for r in rows if r.get("team")]
+    names = teamnames.match_all([r["team"] for r in rows], registry)
+
     out = []
     for r in rows:
-        if not r.get("team"):
-            continue
+        name = names.get(r["team"], teamnames.clean(r["team"]))
+        conf_rec, conf_pct = r.get("conf_record") or "", r.get("conf_points")
+        overall_rec = r.get("overall_record") or ""
+        if name in teams and not (conf_rec and overall_rec):
+            overall, conf = schedule_records(name, teams[name].get("schedule", []), registry)
+            overall_rec = overall_rec or overall
+            if not conf_rec:
+                # A pct without a conference record is the overall pct, mis-read.
+                conf_rec, conf_pct = conf, None
         out.append(
-            {
-                "name": r["team"],
-                "confRec": r.get("conf_record") or "",
-                "overallRec": r.get("overall_record") or "",
-                "confPct": r.get("conf_points"),
-            }
+            {"name": name, "confRec": conf_rec, "overallRec": overall_rec, "confPct": conf_pct}
         )
-    return out
+
+    missing = [t for t in registry if t not in names.values()]
+    extra = []
+    for name in missing:
+        overall, conf = schedule_records(name, teams[name].get("schedule", []), registry)
+        extra.append({"name": name, "confRec": conf, "overallRec": overall, "confPct": None})
+    extra.sort(key=lambda r: (-_pct(r["confRec"]), -_pct(r["overallRec"]), r["name"]))
+    return out + extra
+
+
+def _pct(rec: str) -> float:
+    parts = [int(x) for x in rec.split("-")] if rec else []
+    if len(parts) < 2:
+        return -1.0
+    wins, losses, ties = parts[0], parts[1], parts[2] if len(parts) > 2 else 0
+    games = wins + losses + ties
+    return (wins + ties / 2) / games if games else -1.0
 
 
 def compact_scoreboard(payload):
@@ -219,7 +274,7 @@ def _js(name, value):
 
 
 def run():
-    teams, standings_by_conf, sites = load_all()
+    teams, standings_by_conf, sites, conf_teams = load_all()
     national = load_national()
 
     rosters, schedules, stats = {}, {}, {}
@@ -237,7 +292,10 @@ def run():
             if s["scorers"] or s["keepers"]:
                 stats[name] = s
 
-    standings = {conf: compact_standings(rows) for conf, rows in standings_by_conf.items()}
+    standings = {
+        conf: compact_standings(rows, {t: teams[t] for t in conf_teams.get(conf, [])})
+        for conf, rows in standings_by_conf.items()
+    }
 
     # Order conferences by DISPLAY_ORDER, then anything unexpected at the end.
     present = set(standings.keys())
