@@ -19,15 +19,10 @@ import re
 from collections import Counter
 from datetime import date
 
-import requests
 from bs4 import BeautifulSoup
 
 from d3soccer.pipelines import snapshots
-from d3soccer.scrapers import conferences, sciac
-
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; D3SoccerAppBot/0.1; contact: elijahredelman@gmail.com)"
-}
+from d3soccer.scrapers import conferences, http, sciac
 
 # Selectors the current parsers depend on (scrapers/sidearm.py, conferences.py, sciac.py).
 PARSER_SELECTORS = [
@@ -42,8 +37,9 @@ INTERESTING_CLASS = re.compile(r"roster|schedule|standing|stats|player|game", re
 
 def describe(url: str, links: str | None = None, dump: list[str] | None = None) -> list[str]:
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=20)
-    except requests.RequestException as e:
+        # Same Chrome-like client the scrapers use, so the probe sees what they see.
+        resp = http.get_raw(url, timeout=20)
+    except http.RequestException as e:
         return [f"  ERROR {type(e).__name__}: {e}"]
     out = [
         f"  status {resp.status_code}, {len(resp.content):,} bytes, "
