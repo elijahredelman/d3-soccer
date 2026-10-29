@@ -636,14 +636,14 @@ ODAC_TEAMS = [
     Team(name="Virginia Wesleyan University", conference="ODAC", site_domain="vwuathletics.com"),
     Team(name="Hampden-Sydney College", conference="ODAC", site_domain="hscathletics.com"),
     Team(name="Averett University", conference="ODAC", site_domain="averettcougars.com"),
+    Team(name="Randolph College", conference="ODAC", site_domain="randolphwildcats.com"),
 ]
 # Note: Hollins and Sweet Briar are ODAC members but women's colleges, no men's soccer --
 # excluded. Virginia Wesleyan is renaming to Batten University (effective ~mid-2026) -- same
 # program, domain still vwuathletics.com as of this search (2026-10-06); rename the Team entry
 # once the athletics site itself switches domains, don't rename pre-emptively.
 # Hampden-Sydney's domain is confirmed (its Sidearm stats PDFs live under hscathletics.com);
-# Averett's is the school's known athletics domain but its platform is unverified. Still
-# missing: Randolph College (no athletics domain surfaced by search).
+# Averett's and Randolph's (randolphwildcats.com) were confirmed by test scrapes/probes.
 
 # ---------------------------------------------------------------------
 # Southern Athletic Association (SAA)
@@ -670,6 +670,8 @@ SAA_TEAMS = [
 # Southern Collegiate Athletic Conference (SCAC)
 # ---------------------------------------------------------------------
 SCAC_TEAMS = [
+    # acathletics.com is a parked domain; Austin's real site, austin.prestosports.com, is
+    # PrestoSports behind a Cloudflare bot check (probe, 2026-10-29), so it can't be scraped.
     Team(name="Austin College", conference="SCAC", site_domain="acathletics.com"),
     Team(name="Centenary College of Louisiana", conference="SCAC", site_domain="gocentenary.com"),
     Team(name="Colorado College", conference="SCAC", site_domain="cctigers.com"),
@@ -817,14 +819,14 @@ NACC_TEAMS = [
     Team(name="Concordia University Chicago", conference="NACC", site_domain="cucougars.com"),
     Team(name="Marian University (WI)", conference="NACC", site_domain="sabreathletics.com"),
     Team(name="Concordia University Wisconsin", conference="NACC", site_domain="cuwfalcons.com"),
+    Team(name="Rockford University", conference="NACC", site_domain="rockfordregents.com"),
 ]
 # Note: 13-school NACC membership confirmed live. The 9 domains above (Benedictine through
 # Marian WI) found via web search 2026-10-06, not independently fetched/verified -- spot-check
 # on the next real pull. Marian (WI) here is Fond du Lac, not Marian University Indiana.
 # Dominican here is the Illinois school (River Forest), not Dominican NY.
 #
-# Still missing: Rockford University (no dedicated athletics domain surfaced by search --
-# may run under rockford.edu itself or a PrestoSports subdomain, needs manual confirmation).
+# Rockford University is on standard Sidearm at rockfordregents.com (probe, 2026-10-29).
 #
 # Concordia Wisconsin is in the NACC for men's soccer: it's in the 2026 NACC standings and
 # preseason poll (cuwfalcons.com, 2026-08-26), and not in CCIW_TEAMS.

@@ -26,7 +26,7 @@ def test_describe_html_reports_parser_selectors_and_tables(monkeypatch):
       <table class="standings"><tr><th>Team</th><th>Conf</th></tr><tr><td>X</td></tr></table>
       <a href="/rankings/soccer-men/d3/npi">NPI</a></body></html>"""
     url = "https://x.edu/sports/mens-soccer/roster"
-    monkeypatch.setattr(probe.requests, "get", lambda *a, **k: FakeResponse(html, url=url))
+    monkeypatch.setattr(probe.http, "get_raw", lambda *a, **k: FakeResponse(html, url=url))
     out = "\n".join(probe.describe(url, links="rankings/"))
     assert "li.sidearm-roster-player=2" in out
     assert "platform hints: ['sidearm']" in out
@@ -37,7 +37,7 @@ def test_describe_html_reports_parser_selectors_and_tables(monkeypatch):
 def test_describe_json_reports_shape(monkeypatch):
     body = json.dumps({"title": "NPI", "updated": "Oct 12", "data": [{"Rank": "1"}]})
     monkeypatch.setattr(
-        probe.requests, "get", lambda *a, **k: FakeResponse(body, "application/json", url="u")
+        probe.http, "get_raw", lambda *a, **k: FakeResponse(body, "application/json", url="u")
     )
     out = "\n".join(probe.describe("u"))
     assert "data rows: 1" in out and "'Oct 12'" in out
@@ -84,7 +84,7 @@ def test_npi_tries_regional_rankings_first():
 
 def test_describe_dumps_selector_and_tiny_body(monkeypatch):
     html = "<html><body><table><tbody><tr><td>X</td></tr></tbody></table></body></html>"
-    monkeypatch.setattr(probe.requests, "get", lambda *a, **k: FakeResponse(html, url="u"))
+    monkeypatch.setattr(probe.http, "get_raw", lambda *a, **k: FakeResponse(html, url="u"))
     out = "\n".join(probe.describe("u", dump=["tbody tr", "li.nope"]))
     assert "dump 'tbody tr': '<tr><td>X</td></tr>'" in out
     assert "dump 'li.nope': no match" in out

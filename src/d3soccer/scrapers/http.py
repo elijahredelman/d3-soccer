@@ -13,7 +13,7 @@ import time
 from curl_cffi import requests as cffi_requests
 from curl_cffi.requests.exceptions import HTTPError, RequestException
 
-__all__ = ["HTTPError", "RequestException", "get"]
+__all__ = ["HTTPError", "RequestException", "get", "get_raw"]
 
 TIMEOUT = 30
 ATTEMPTS = 3
@@ -42,3 +42,8 @@ def get(url: str, *, headers: dict | None = None, timeout: float = TIMEOUT):
                 raise
         time.sleep(2**attempt)
     raise AssertionError("unreachable")
+
+
+def get_raw(url: str, *, timeout: float = TIMEOUT):
+    """One Chrome-like GET with no retries or status check (for the probe)."""
+    return _session.get(url, headers=HEADERS, timeout=timeout)

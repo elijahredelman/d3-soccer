@@ -125,7 +125,58 @@ def fetch_schedule(
     soup = _get(url)
     games = _parse_schedule_html(soup, team_name) or _parse_schedule_table(soup, team_name)
     if not games:
+        # Some schedule templates (e.g. Rhodes') render games with JavaScript, but the
+        # page links a plain-text version of the same schedule.
+        m = re.search(r"/services/schedule_txt\.ashx\?schedule=\d+", str(soup))
+        if m:
+            games = _parse_schedule_text(
+                http.get(f"https://{site_domain}{m.group(0)}").text, team_name
+            )
+    if not games:
         raise _nothing_found(soup, url)
+    return games
+
+
+def _parse_schedule_text(text: str, team_name: str) -> list[Game]:
+    """
+    Sidearm's schedule_txt.ashx: a fixed-width table under a header line
+    "Date  Time  At  Opponent  Location  Tournament  Result". Columns are cut at
+    the header words' positions.
+    """
+    lines = [ln.rstrip() for ln in re.split(r"\r?\n\r?", text)]
+    header = next(
+        (i for i, ln in enumerate(lines) if ln.startswith("Date") and "Opponent" in ln), None
+    )
+    if header is None:
+        return []
+    names = ["Date", "Time", "At", "Opponent", "Location", "Tournament", "Result"]
+    starts = [(n, lines[header].find(n)) for n in names if lines[header].find(n) >= 0]
+    games = []
+    for line in lines[header + 1 :]:
+        if not line.strip():
+            continue
+        cols = {
+            name: line[start : (starts[i + 1][1] if i + 1 < len(starts) else None)].strip()
+            for i, (name, start) in enumerate(starts)
+        }
+        opponent = cols.get("Opponent", "")
+        if not opponent or " vs. " in opponent:  # games between two other teams it hosts
+            continue
+        at = cols.get("At", "").lower()
+        result = cols.get("Result", "")
+        m = re.match(r"([WLT])\s+(\d+-\d+.*)", result)
+        games.append(
+            Game(
+                team=team_name,
+                date=cols.get("Date", ""),
+                opponent=opponent,
+                location=at if at in ("home", "away") else "unknown",
+                conference_game=False,
+                result=f"{m.group(1)},{m.group(2)}" if m else (result or None),
+                venue=cols.get("Location") or None,
+                time=cols.get("Time") or None,
+            )
+        )
     return games
 
 
