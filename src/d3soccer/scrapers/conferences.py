@@ -1086,12 +1086,35 @@ def _first_matching(row_map: dict, *candidates: str) -> str | None:
 
 
 def _conf_record_fallback(row_map: dict) -> str | None:
-    """A "<Conference> Record" column, e.g. Atlantic East's "AEC Record"."""
+    """
+    The conference record when its header isn't a known name: a "<Conference> Record"
+    column (Atlantic East's "AEC Record"), or else the first W-L(-T) shaped column that
+    isn't an overall, split or recent-form one (American Rivers heads it "A-R-C").
+    """
     for header, value in row_map.items():
         h = _norm(header)
         if h.endswith("record") and "overall" not in h:
             return value
+    for header, value in row_map.items():
+        if _RECORD.match(value) and not _NOT_CONF.search(_norm(header)):
+            return value
     return None
+
+
+_RECORD = re.compile(r"^\d+-\d+(-\d+)?$")
+_NOT_CONF = re.compile(r"overall|home|away|neutral|l10|last|streak|gf|ga|#\d")
+
+
+def _win_pct(record: str) -> str | None:
+    """(wins + ties/2) / games, formatted like the sites do: "1.000", ".857"."""
+    if not _RECORD.match(record or ""):
+        return None
+    wins, losses, ties = ([int(x) for x in record.split("-")] + [0])[:3]
+    games = wins + losses + ties
+    if not games:
+        return None
+    pct = f"{(wins + ties / 2) / games:.3f}"
+    return pct[1:] if pct.startswith("0") else pct
 
 
 def _parse_sidearm_standings_table(html: str, conference_name: str) -> list[StandingRow]:
@@ -1137,21 +1160,35 @@ def _parse_sidearm_standings_table(html: str, conference_name: str) -> list[Stan
         if len(vals) < 2:
             continue
         row_map = dict(zip(headers, vals))
-        # Team column names seen: School, Team, Institution (NAC), Schools (Atlantic
-        # East), "School Name With Logo (link to Schedule)" (SLIAC). It is always first.
-        team_name = _first_matching(row_map, "School", "Team", "Institution", "Schools") or vals[0]
+        # The team is always the first column, and its link holds the bare name; the
+        # cell's text can carry seed/clinch markers after it ("Univ. of Dubuque" + "C | (1)").
+        link = cells[0].find("a")
+        team_name = (link.get_text(strip=True) if link else "") or vals[0]
         if not team_name:
             continue
+        # USA South heads both records "W-L-T": conference first, then overall.
+        two_wlt = "W-L-T #2" in row_map
+        conf_record = (
+            _first_matching(row_map, "CONF. W-L", "Conf", "Conference", "C-REC")
+            or (row_map["W-L-T"] if two_wlt else None)
+            or _conf_record_fallback(row_map)
+            or ""
+        )
         rows.append(
             StandingRow(
                 conference=conference_name,
                 team=team_name,
-                conf_record=_first_matching(row_map, "CONF. W-L", "Conf", "Conference", "C-REC")
-                or _conf_record_fallback(row_map)
+                conf_record=conf_record,
+                overall_record=_first_matching(
+                    row_map, "W-L", "Overall", "O-REC", "Overall Record", "W-L-T #2"
+                )
                 or "",
-                overall_record=_first_matching(row_map, "W-L", "Overall", "O-REC", "Overall Record")
-                or "",
-                conf_points=_first_matching(row_map, "CONF. PCT", "CPct.", "C-W%", "Win %", "Pct."),
+                # Computed from the conference record when there is one: the header
+                # lookup picked the overall pct on MAC, UAA, ASC and ARC pages, and
+                # NCAC has no pct column. It matched every site-published conference
+                # pct it was checked against (135 of 135, 2026-10-29).
+                conf_points=_win_pct(conf_record)
+                or _first_matching(row_map, "CONF. PCT", "CPct.", "C-W%", "Win %", "Pct."),
             )
         )
     return rows

@@ -25,7 +25,9 @@ def cmd_build(args: argparse.Namespace) -> None:
 def cmd_probe(args: argparse.Namespace) -> None:
     from d3soccer.pipelines import probe
 
-    probe.run(args.urls, failed=args.failed, links=args.links, dump=args.dump)
+    probe.run(
+        args.urls, failed=args.failed, links=args.links, dump=args.dump, standings=args.standings
+    )
 
 
 def cmd_serve(args: argparse.Namespace) -> None:
@@ -63,6 +65,9 @@ def build_parser() -> argparse.ArgumentParser:
     probe.add_argument("--links", help="also list hrefs containing this text")
     probe.add_argument(
         "--dump", action="append", help="print the HTML of the first match of this CSS selector"
+    )
+    probe.add_argument(
+        "--standings", nargs="+", help='run the standings parser for these conferences, or "all"'
     )
     probe.set_defaults(func=cmd_probe)
 
