@@ -65,6 +65,9 @@ def describe(url: str, links: str | None = None, dump: list[str] | None = None) 
             out.append(f"  {type(data).__name__} of {len(data)}")
         return out
 
+    if "text/plain" in resp.headers.get("content-type", ""):
+        return [*out, f"  text: {resp.text[:3000]!r}"]
+
     html = resp.text
     if len(html) < 1500:
         out.append(f"  body: {html!r}")
