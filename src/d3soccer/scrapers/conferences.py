@@ -670,6 +670,8 @@ SAA_TEAMS = [
 # Southern Collegiate Athletic Conference (SCAC)
 # ---------------------------------------------------------------------
 SCAC_TEAMS = [
+    # acathletics.com is a parked domain; Austin's real site, austin.prestosports.com, is
+    # PrestoSports behind a Cloudflare bot check (probe, 2026-10-29), so it can't be scraped.
     Team(name="Austin College", conference="SCAC", site_domain="acathletics.com"),
     Team(name="Centenary College of Louisiana", conference="SCAC", site_domain="gocentenary.com"),
     Team(name="Colorado College", conference="SCAC", site_domain="cctigers.com"),
