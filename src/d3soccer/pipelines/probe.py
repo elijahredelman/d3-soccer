@@ -6,6 +6,7 @@ reach the sites (the Probe sites workflow) instead of guessing at selectors.
     uv run d3soccer probe --failed      # every non-403 failure in the latest snapshot
     uv run d3soccer probe URL --links rankings/soccer-men   # also list matching hrefs
     uv run d3soccer probe URL --dump "tbody tr"             # print the first match's HTML
+    uv run d3soccer probe --standings ARC NCAC              # run the standings parser ("all")
 
 For HTML it reports the platform, the counts of the selectors our Sidearm
 parsers rely on, every table's classes and header row, and the most common
@@ -158,12 +159,36 @@ def failed_urls() -> list[str]:
     return list(dict.fromkeys(urls))
 
 
+def print_standings(keys: list[str]) -> None:
+    """Run the real standings parser for these conferences ("all" for every one) and print
+    its rows as JSON lines, without writing a snapshot."""
+    from d3soccer.pipelines.conferences import registry
+
+    reg = registry()
+    for key in list(reg) if keys == ["all"] else keys:
+        try:
+            rows = reg[key]["fetch_standings"]()
+        except Exception as e:
+            print(json.dumps({"conference": key, "error": f"{type(e).__name__}: {e}"}))
+            continue
+        for row in rows:
+            print(json.dumps({"conference": key, **vars(row)}))
+
+
 def run(
-    urls: list[str], failed: bool = False, links: str | None = None, dump: list[str] | None = None
+    urls: list[str],
+    failed: bool = False,
+    links: str | None = None,
+    dump: list[str] | None = None,
+    standings: list[str] | None = None,
 ) -> None:
+    if standings:
+        print_standings(standings)
     targets = list(urls) + (failed_urls() if failed else [])
     if not targets:
-        raise SystemExit("Nothing to probe: pass URLs or --failed.")
+        if standings:
+            return
+        raise SystemExit("Nothing to probe: pass URLs, --failed or --standings.")
     for url in targets:
         print(url)
         print("\n".join(describe(url, links, dump)))
