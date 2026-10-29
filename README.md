@@ -52,6 +52,7 @@ uv run d3soccer scrape all
 uv run d3soccer build                         # regenerate web/app_data.js from data/snapshots
 uv run d3soccer serve                         # http://127.0.0.1:8000
 uv run d3soccer probe --failed                # describe pages the last refresh failed on
+uv run d3soccer probe --standings all         # run the standings parser on every conference, print rows
 uv run pytest
 uv run ruff check . && uv run ruff format .
 ```
