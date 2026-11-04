@@ -89,3 +89,21 @@ def test_describe_dumps_selector_and_tiny_body(monkeypatch):
     assert "dump 'tbody tr': '<tr><td>X</td></tr>'" in out
     assert "dump 'li.nope': no match" in out
     assert "body: '<html>" in out
+
+
+def test_print_standings_runs_parser_per_conference(monkeypatch, capsys):
+    from d3soccer.models import StandingRow
+    from d3soccer.pipelines import conferences
+
+    def broken():
+        raise ValueError("no table")
+
+    reg = {
+        "A": {"fetch_standings": lambda: [StandingRow("A", "Team A", "1-0", "2-0", "1.000")]},
+        "B": {"fetch_standings": broken},
+    }
+    monkeypatch.setattr(conferences, "registry", lambda: reg)
+    probe.print_standings(["all"])
+    lines = [json.loads(x) for x in capsys.readouterr().out.splitlines()]
+    assert lines[0]["team"] == "Team A" and lines[0]["conf_points"] == "1.000"
+    assert lines[1] == {"conference": "B", "error": "ValueError: no table"}
