@@ -8,3 +8,5 @@ WEB_DIR = PROJECT_ROOT / "web"
 APP_DATA_JS = WEB_DIR / "app_data.js"
 # Hand-pasted NCAA NPI table (see the file's header comment); overrides the NPI feed.
 NPI_PASTE = PROJECT_ROOT / "data" / "npi.txt"
+# Hand-maintained NCAA tournament bracket (see the file's header comment).
+BRACKET_FILE = PROJECT_ROOT / "data" / "bracket.txt"

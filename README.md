@@ -40,6 +40,14 @@ Two GitHub Actions workflows in `.github/workflows/`:
 - **Deploy site** (`pages.yml`) builds `app_data.js` and publishes `web/` to GitHub
   Pages on every push to `main`.
 
+## NCAA tournament bracket
+
+The NCAA doesn't publish the bracket as a feed, so it lives in `data/bracket.txt`, edited
+by hand: type in the matchups when the field is announced and fill in scores as games
+finish (the file's header shows the format). Team names can be the NCAA's short forms
+("CWRU", "Wash. & Lee"); they link to team pages automatically. Until the file has
+games, the site's **Bracket** tab shows the announcement date and the NPI top 25.
+
 ## Usage
 
 Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).

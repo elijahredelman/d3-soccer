@@ -1,0 +1,21 @@
+# NCAA DIII men's soccer tournament bracket, edited by hand. The site's Bracket tab
+# shows it as soon as there's at least one game under a round; until then it shows
+# the "announced" date and the latest NPI as teams to watch.
+#
+# When the bracket comes out (ncaa.com/championships/soccer-men/d3):
+# 1. Add a "## <round>" line, then one line per game: team | team | score | note
+#    - "### <group>" lines (a host site or pod) are optional, under a round
+#    - leave score empty until it's played: Williams | Amherst | | Sat. 11 a.m.
+#    - score is first team first; ties add PKs: Tufts | Bowdoin | 1-1 (4-3 PK) |
+#    - a first-round bye: Hamilton | Bye
+#    - team names can be short ("CWRU", "Wash. & Lee"), like the NPI table
+# 2. Update the "as of" line and commit. The site redeploys itself.
+#
+# Example:
+#   ## First round
+#   ### Williamstown, Mass.
+#   Williams | Bye
+#   Amherst | Vassar | 2-1 OT | Sat., Nov. 14
+#
+# announced: Monday, Nov. 9
+# as of:

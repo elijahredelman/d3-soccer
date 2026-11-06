@@ -2,7 +2,16 @@
 <html lang="en">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Rosters, schedules, standings and national leaders for NCAA Division III men's soccer.">
+<meta name="description" content="Scores, NPI, the NCAA tournament bracket, standings for all 41 conferences, rosters and national leaders for Division III men's soccer.">
+<meta name="theme-color" content="#1c3d2e">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Pitch Sheet">
+<meta property="og:title" content="Pitch Sheet · D3 Men's Soccer">
+<meta property="og:description" content="Scores, NPI, the NCAA tournament bracket, standings for all 41 conferences, rosters and national leaders for Division III men's soccer.">
+<meta property="og:url" content="https://elijahredelman.github.io/d3-soccer/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Pitch Sheet · D3 Men's Soccer">
+<meta name="twitter:description" content="Scores, NPI, the NCAA bracket, standings, rosters and national leaders for Division III men's soccer.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23c99a3a'/%3E%3Ctext x='16' y='22' font-family='Georgia,serif' font-size='16' font-weight='700' text-anchor='middle' fill='%230f1a14'%3ED3%3C/text%3E%3C/svg%3E">
 <title>Pitch Sheet</title>
 <style>
@@ -254,6 +263,47 @@ a{ color:inherit; text-decoration:none; }
   cursor:pointer;
 }
 .teaser-row .go{ color:var(--muted); font-size:.9rem; }
+
+/* ---- top bar button (theme toggle) ---- */
+.gear{ border:none; color:inherit; cursor:pointer; font-family:inherit; font-size:1rem; }
+.tabbar button .ic svg{ width:20px; height:20px; display:block; }
+
+/* ---- team page: back + follow ---- */
+.back-btn{
+  display:inline-flex; align-items:center; gap:6px; border:none; background:none; color:var(--muted);
+  font-family:inherit; font-size:.82rem; font-weight:600; padding:2px 2px 12px; cursor:pointer;
+}
+.follow-btn{
+  display:inline-flex; align-items:center; gap:5px; font-size:.72rem; font-weight:600; font-family:inherit;
+  background:rgba(244,241,232,.14); color:#f4f1e8; border:1px solid transparent;
+  padding:5px 10px; border-radius:20px; cursor:pointer; margin-left:6px;
+}
+.follow-btn.on{ background:var(--gold); color:var(--gold-ink); }
+.team-hero h2{ font-size:1.25rem; line-height:1.2; }
+.team-hero .actions{ margin-top:8px; display:flex; flex-wrap:wrap; gap:6px 0; }
+.team-hero .crest{ flex:0 0 auto; }
+
+.row-main .primary.link{ cursor:pointer; }
+.row-main .primary.link:hover{ text-decoration:underline; text-underline-offset:3px; }
+
+/* ---- bracket ---- */
+.hero-card{
+  background: linear-gradient(155deg, var(--pitch), var(--pitch-2)); color:#f4f1e8;
+  border-radius:var(--radius); padding:18px; box-shadow:var(--shadow); cursor:pointer;
+}
+.hero-card .kicker{ font-size:.64rem; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:#e7c877; }
+.hero-card h3{ font-size:1.3rem; margin-top:4px; font-weight:600; }
+.hero-card p{ margin:6px 0 0; font-size:.82rem; opacity:.85; line-height:1.45; }
+.hero-card .cta{ display:inline-block; margin-top:12px; font-size:.78rem; font-weight:700; color:#e7c877; }
+.bracket-group{ font-size:.66rem; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); padding:10px 14px 0; }
+.bracket-game{ padding:10px 14px; border-bottom:1px solid var(--line); }
+.bracket-game:last-child{ border-bottom:none; }
+.bracket-game .side{ display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:.9rem; padding:2px 0; }
+.bracket-game .side .nm{ font-weight:600; }
+.bracket-game .side.lost .nm, .bracket-game .side.lost .sc{ color:var(--muted); font-weight:500; }
+.bracket-game .side.won .nm::after{ content:" ✓"; color:var(--gold); font-weight:700; }
+.bracket-game .side .sc{ font-weight:700; font-variant-numeric:tabular-nums; }
+.bracket-game .note{ font-size:.72rem; color:var(--muted); margin-top:3px; }
 </style>
 
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter+Tight:wght@400;500;600;700&display=swap">
@@ -263,7 +313,7 @@ a{ color:inherit; text-decoration:none; }
     <div class="mark">D3</div>
     <div class="word">Pitch Sheet<small>Division III Men's Soccer</small></div>
   </div>
-  <div class="gear">⚙</div>
+  <button class="gear" id="themeBtn" aria-label="Switch light/dark theme" title="Switch light/dark theme"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button>
 </div>
 
 <div class="wrap">
@@ -273,16 +323,22 @@ a{ color:inherit; text-decoration:none; }
     <div class="section-label" id="liveStripLabel">Live &amp; today</div>
     <div class="live-strip" id="liveStrip"></div>
 
-    <div class="section-label">SCIAC standings</div>
-    <div class="card" id="homeStandings"></div>
-    <div class="card teaser-row" style="margin-top:8px; cursor:pointer;" onclick="showTab('rankings')">
-      <span style="font-weight:600;font-size:.86rem;">Full standings, USC Top 25 &amp; NPI</span>
+    <div class="section-label">NCAA tournament</div>
+    <div class="hero-card" id="homeBracket" onclick="go('bracket')"></div>
+
+    <div class="section-label" id="homeNpiLabel">NPI top 10</div>
+    <div class="card" id="homeNpi"></div>
+    <div class="card teaser-row" style="margin-top:8px;" onclick="go('rankings')">
+      <span style="font-weight:600;font-size:.86rem;">Full NPI, coaches' Top 25 &amp; conference standings</span>
       <span class="go">→</span>
     </div>
 
-    <div class="section-label">National individual leaders <span style="opacity:.6;font-weight:500;text-transform:none;letter-spacing:0;">— save %</span></div>
+    <div class="section-label">National leaders <span style="opacity:.6;font-weight:500;text-transform:none;letter-spacing:0;">— points per game</span></div>
     <div class="card" id="homeLeaders"></div>
-    <div class="sample-note" id="homeLeadersNote">Pulled live from the NCAA stats feed.</div>
+    <div class="card teaser-row" style="margin-top:8px;" onclick="go('stats')">
+      <span style="font-weight:600;font-size:.86rem;">All individual &amp; team leaders</span>
+      <span class="go">→</span>
+    </div>
 
     <div class="section-label">Your teams</div>
     <div class="card" id="followedTeams"></div>
@@ -292,16 +348,19 @@ a{ color:inherit; text-decoration:none; }
   <div class="tab-panel" id="panel-teams">
     <div class="search-row">
       <span>🔍</span>
-      <input placeholder="Search 400+ teams, e.g. “Middlebury”" />
+      <input id="teamSearch" type="search" placeholder="Search 400+ teams, e.g. “Middlebury”" autocomplete="off" />
     </div>
-    <div class="section-label">Conferences</div>
-    <div class="seg" id="confSeg"></div>
+    <div id="confPicker">
+      <div class="section-label">Conferences</div>
+      <div class="seg" id="confSeg"></div>
+    </div>
     <div class="section-label" id="teamListLabel">NESCAC</div>
     <div class="card" id="teamList"></div>
   </div>
 
   <!-- ============ TEAM DETAIL ============ -->
   <div class="tab-panel" id="panel-team">
+    <button class="back-btn" onclick="history.length > 1 ? history.back() : go('teams')">← Back</button>
     <div class="team-hero" id="teamHero"></div>
 
     <div class="section-label" style="margin-top:18px;" id="teamStatsLabel">Team leaders</div>
@@ -328,6 +387,14 @@ a{ color:inherit; text-decoration:none; }
     <div class="sample-note" id="rankNote"></div>
   </div>
 
+  <!-- ============ BRACKET ============ -->
+  <div class="tab-panel" id="panel-bracket">
+    <h2 style="margin:4px 2px 2px;">NCAA Tournament</h2>
+    <div class="meta-line" style="margin:0 2px;" id="bracketMeta"></div>
+    <div class="seg" id="bracketRoundSeg" style="margin-top:14px;"></div>
+    <div id="bracketBody"></div>
+  </div>
+
   <!-- ============ STATS ============ -->
   <div class="tab-panel" id="panel-stats">
     <div class="seg" id="statGroupSeg"></div>
@@ -340,10 +407,11 @@ a{ color:inherit; text-decoration:none; }
 </div>
 
 <div class="tabbar">
-  <button class="active" data-tab="home"><span class="ic">⌂</span>Home</button>
-  <button data-tab="teams"><span class="ic">▦</span>Teams</button>
-  <button data-tab="rankings"><span class="ic">☰</span>Rankings</button>
-  <button data-tab="stats"><span class="ic">◔</span>Leaders</button>
+  <button class="active" data-tab="home"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></span>Home</button>
+  <button data-tab="teams"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 6v6c0 4.5 3.4 8 8 9 4.6-1 8-4.5 8-9V6z"/></svg></span>Teams</button>
+  <button data-tab="bracket"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8M10 17h4v4h-4z"/></svg></span>Bracket</button>
+  <button data-tab="rankings"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V12h4v8M10 20V5h4v15M16 20v-6h4v6"/></svg></span>Rankings</button>
+  <button data-tab="stats"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="6"/><path d="m9 14-1.5 7L12 19l4.5 2L15 14"/></svg></span>Leaders</button>
 </div>
 
 <script src="app_data.js"></script>
@@ -363,6 +431,21 @@ const fmtTime = iso => new Date(iso)
 const jsArg = s => "'" + String(s).replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 
 const conferences = REAL_CONFERENCES;
+// Scraper keys -> how people write them.
+const CONF_NAMES = {
+  UNITED_EAST: "United East", ATLANTIC_EAST: "Atlantic East", MAC_COMMONWEALTH: "MAC Commonwealth",
+  MAC_FREEDOM: "MAC Freedom", LANDMARK: "Landmark", USA_SOUTH: "USA South",
+  "Northwest Conference": "Northwest", Centennial: "Centennial", "Liberty League": "Liberty League",
+};
+const confName = c => CONF_NAMES[c] || c;
+const esc = s => String(s ?? "").replace(/[&<>"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
+const initials = name => name.replace(/^(University of|The|College of)\s+/i, "").slice(0,2).toUpperCase();
+// National feeds (NPI, poll, bracket) spell names their own way; map to our team pages.
+const linkName = name => (typeof REAL_TEAM_LINKS !== "undefined" && REAL_TEAM_LINKS[name]) || name;
+const store = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch(e){ return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} },
+};
 
 const teams = {};
 for (const conf of REAL_CONFERENCES) {
@@ -415,72 +498,146 @@ function renderLive(){
     </div>`).join("");
 }
 
-function renderHomeStandings(){
-  const top = (teams.SCIAC || []).slice(0,4).map(t => ({name:t.name, confRec:t.confRec, overallRec:t.rec}));
-  document.getElementById("homeStandings").innerHTML = `
-    <div class="standings-scroll"><table class="standings-table">
-      <thead><tr><th>#</th><th>Team</th><th>Conf</th><th>Overall</th></tr></thead>
-      <tbody>
-        ${top.map((t,i)=>`
-          <tr class="${i===0?'top':''}">
-            <td class="rank-cell">${i+1}</td>
-            <td class="team-cell" onclick="openTeam(${jsArg(t.name)})"><span class="crest-badge sm">${t.name.slice(0,2).toUpperCase()}</span>${t.name}</td>
-            <td class="num-cell">${t.confRec}</td>
-            <td class="num-cell strong">${t.overallRec}</td>
-          </tr>`).join("")}
-      </tbody>
-    </table></div>`;
+function renderHomeBracket(){
+  const b = REAL_BRACKET;
+  const live = b && b.rounds.length;
+  const el = document.getElementById("homeBracket");
+  if (live) {
+    const cur = currentRound(b);
+    const games = cur.games.filter(g => !g.bye);
+    const done = games.filter(g => g.winner).length;
+    el.innerHTML = `<div class="kicker">NCAA DIII Championship · ${esc(cur.name)}</div>
+      <h3>The bracket is out</h3>
+      <p>${done} of ${games.length} ${esc(cur.name.toLowerCase())} games final${b.updated ? " · updated " + esc(b.updated) : ""}.</p>
+      <span class="cta">See the bracket →</span>`;
+  } else {
+    el.innerHTML = `<div class="kicker">NCAA DIII Championship</div>
+      <h3>Selections: ${esc((b && b.announced) || "coming soon")}</h3>
+      <p>The field drops here when the NCAA announces it. Until then, here's where the NPI has everyone.</p>
+      <span class="cta">Bracket watch →</span>`;
+  }
+}
+
+function npiRows(){
+  if (!REAL_NPI) return [];
+  const pick = (row, re) => Object.keys(row).find(k => re.test(k));
+  return REAL_NPI.data.map((row,i) => {
+    const rankKey = pick(row, /^(npi\s*)?(rank|rk)\.?$/i);
+    const teamKey = pick(row, /^(team|school|name)$/i) || pick(row, /team|school/i);
+    const npiKey = pick(row, /^npi$/i);
+    const recKey = pick(row, /record|^w-l/i);
+    const regionKey = pick(row, /^region$/i);
+    return {
+      rank: rankKey ? row[rankKey] : String(i+1), team: teamKey ? row[teamKey] : "",
+      npi: npiKey ? row[npiKey] : "", rec: recKey ? row[recKey] : "", region: regionKey ? row[regionKey] : "",
+      row, used: [rankKey, teamKey, npiKey, recKey, regionKey, pick(row, /regional rank/i)],
+    };
+  });
+}
+
+function npiRow(r, i){
+  const name = linkName(r.team);
+  const conf = conferenceOf(name);
+  // Any extra columns (a pasted nitty-gritty table has many) after record/region.
+  const extra = Object.entries(r.row).filter(([k,v]) => k && !r.used.includes(k) && v !== "" && v != null)
+    .slice(0, 2).map(([k,v]) => `${k} ${v}`);
+  const sub = [r.rec, r.region, ...extra].filter(Boolean).map(esc).join(" · ");
+  return `
+    <div class="list-row ${i<3?'top':''}">
+      <div class="rank-badge">${esc(r.rank)}</div>
+      <div class="row-main">
+        <div class="primary${conf?' link':''}"${conf?` onclick="openTeam(${jsArg(name)})"`:""}>${esc(r.team)}${conf?` <span class="watch-chip">${esc(confName(conf))}</span>`:""}</div>
+        ${sub ? `<div class="secondary">${sub}</div>` : ""}
+      </div>
+      ${r.npi ? `<div class="row-trail"><div class="figure num">${esc(r.npi)}</div><div class="figlabel">NPI</div></div>` : ""}
+    </div>`;
+}
+
+function renderHomeNpi(){
+  const rows = npiRows();
+  if (!rows.length) {
+    document.getElementById("homeNpiLabel").textContent = "United Soccer Coaches top 10";
+    document.getElementById("homeNpi").innerHTML = REAL_USC_POLL.slice(0,10).map((r,i)=>rankRow(r.rank, r.team, r.rec, i)).join("");
+    return;
+  }
+  document.getElementById("homeNpiLabel").textContent = "NPI top 10" + (REAL_NPI.updated ? " · " + REAL_NPI.updated.replace(/^through games/i, "thru") : "");
+  document.getElementById("homeNpi").innerHTML = rows.slice(0,10).map(npiRow).join("");
 }
 
 function renderHomeLeaders(){
-  const payload = REAL_LEADERS.save_pct;
+  const payload = REAL_LEADERS.points_per_game;
   const rows = (payload && payload.data) || [];
-  document.getElementById("homeLeadersNote").textContent = payload
-    ? "Real, live from the NCAA stats feed — " + payload.updated + "."
-    : "Save % leaders not yet pulled.";
-  document.getElementById("homeLeaders").innerHTML = rows.slice(0,4).map((p,i)=>`
+  document.getElementById("homeLeaders").innerHTML = rows.length ? rows.slice(0,5).map((p,i)=>`
     <div class="list-row ${i===0?'top':''}">
-      <div class="crest-badge sm" style="background:${i===0?'linear-gradient(155deg,var(--gold),#e7c877)':'linear-gradient(155deg,var(--pitch),var(--pitch-2))'};color:${i===0?'var(--gold-ink)':'#f4f1e8'};">${p.Rank}</div>
+      <div class="rank-badge">${esc(p.Rank)}</div>
       <div class="row-main">
-        <div class="primary">${p.Name}</div>
-        <div class="secondary">${p.Team} · ${p.Cl}</div>
+        <div class="primary">${esc(p.Name)}</div>
+        <div class="secondary">${esc(p.Team)} · ${esc(p.Cl)} · ${esc(p.Games)} GP</div>
       </div>
       <div class="row-trail">
-        <div class="figure num">${p["Pct."]}</div>
-        <div class="figlabel">SV%</div>
+        <div class="figure num">${esc(p["Per Game"])}</div>
+        <div class="figlabel">Pts/gm</div>
       </div>
-    </div>`).join("");
+    </div>`).join("") : `<div class="empty-hint">Leaders haven't loaded yet.</div>`;
+}
+
+function followed(){ return store.get("followed", []).filter(n => findTeam(n)); }
+function toggleFollow(name){
+  const list = store.get("followed", []);
+  const i = list.indexOf(name);
+  if (i >= 0) list.splice(i, 1); else list.push(name);
+  store.set("followed", list);
+  renderFollowed();
+  const btn = document.getElementById("followBtn");
+  if (btn) setFollowBtn(btn, name);
+}
+function setFollowBtn(btn, name){
+  const on = store.get("followed", []).includes(name);
+  btn.classList.toggle("on", on);
+  btn.textContent = on ? "★ Following" : "☆ Follow";
+}
+
+function teamRow(t, conf){
+  const sub = [t.rec && t.rec + " overall", t.confRec && t.confRec + " conf."].filter(Boolean).join(" · ");
+  return `
+    <div class="list-row" style="cursor:pointer" onclick="openTeam(${jsArg(t.name)})">
+      <div class="crest-badge">${esc(initials(t.name))}</div>
+      <div class="row-main">
+        <div class="primary">${esc(t.name)}</div>
+        <div class="secondary">${conf ? esc(confName(conf)) + (sub ? " · " : "") : ""}${esc(sub)}</div>
+      </div>
+      ${t.site ? `<div class="row-trail"><a class="watch-link ghost" href="https://${esc(t.site)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Site <span class="arrow">↗</span></a></div>` : ""}
+    </div>`;
 }
 
 function renderFollowed(){
-  const sample = [(teams.SCIAC || []).find(t=>t.name==="Occidental")].filter(Boolean);
-  document.getElementById("followedTeams").innerHTML = sample.map(t=>`
-    <div class="list-row" style="cursor:pointer" onclick="openTeam(${jsArg(t.name)})">
-      <div class="crest-badge">${t.name.slice(0,2).toUpperCase()}</div>
-      <div class="row-main">
-        <div class="primary">${t.name}</div>
-        <div class="secondary">SCIAC · ${t.rec} overall · ${t.confRec} conf.</div>
-      </div>
-      <div class="row-trail"><a class="watch-link" href="https://${t.site}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Site <span class="arrow">↗</span></a></div>
-    </div>`).join("");
+  const list = followed().map(findTeam);
+  document.getElementById("followedTeams").innerHTML = list.length
+    ? list.map(t => teamRow(t, t.conf)).join("")
+    : `<div class="empty-hint">Tap <b>☆ Follow</b> on any team's page and it'll show up here.</div>`;
 }
 
 function renderConfSeg(){
   document.getElementById("confSeg").innerHTML = conferences.map((c,i)=>
-    `<button data-c="${c}" class="${i===0?'active':''}">${c}</button>`).join("");
+    `<button data-c="${c}" class="${i===0?'active':''}">${esc(confName(c))}</button>`).join("");
 }
 
 function renderTeamList(conf){
-  document.getElementById("teamListLabel").textContent = conf;
-  document.getElementById("teamList").innerHTML = teams[conf].map(t=>`
-    <div class="list-row" style="cursor:pointer" onclick="openTeam(${jsArg(t.name)})">
-      <div class="crest-badge">${t.name.slice(0,2).toUpperCase()}</div>
-      <div class="row-main">
-        <div class="primary">${t.name}</div>
-        <div class="secondary">${t.confRec ? t.rec+" overall · "+t.confRec+" conf." : (t.npi ? t.rec+" · NPI #"+t.npi : t.rec+" overall")}</div>
-      </div>
-      <div class="row-trail"><a class="watch-link ghost" href="https://${t.site}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Site <span class="arrow">↗</span></a></div>
-    </div>`).join("");
+  document.getElementById("teamListLabel").textContent = confName(conf);
+  document.getElementById("teamList").innerHTML = teams[conf].map(t => teamRow(t)).join("");
+}
+
+function renderSearch(q){
+  q = q.trim().toLowerCase();
+  document.getElementById("confPicker").hidden = !!q;
+  if (!q) { renderTeamList(document.querySelector("#confSeg button.active").dataset.c); return; }
+  const hits = [];
+  for (const c of conferences) for (const t of teams[c])
+    if (t.name.toLowerCase().includes(q) || confName(c).toLowerCase() === q) hits.push([t, c]);
+  document.getElementById("teamListLabel").textContent = hits.length + (hits.length === 1 ? " team" : " teams");
+  document.getElementById("teamList").innerHTML = hits.length
+    ? hits.slice(0, 60).map(([t,c]) => teamRow(t, c)).join("")
+    : `<div class="empty-hint">No team matches “${esc(q)}”.</div>`;
 }
 
 function findTeam(name){
@@ -488,17 +645,29 @@ function findTeam(name){
   return null;
 }
 
-function openTeam(name){
+function npiRankOf(name){
+  const hit = npiRows().find(r => linkName(r.team) === name);
+  return hit ? hit.rank : null;
+}
+
+function openTeam(name, fromRoute){
   const t = findTeam(name);
   if(!t) return;
+  if (!fromRoute) { history.pushState(null, "", "#team/" + encodeURIComponent(name)); }
+  const npiRank = npiRankOf(t.name);
+  document.title = t.name + " · Pitch Sheet";
   document.getElementById("teamHero").innerHTML = `
-    <div class="crest">${t.name.slice(0,2).toUpperCase()}</div>
-    <div>
-      <h2 style="color:#f4f1e8;">${t.name}</h2>
-      <div class="meta">${t.conf}${t.confRec ? " · "+t.confRec+" conf." : (t.npi ? " · NPI #"+t.npi : "")}</div>
-      <a class="watch-link" style="margin-top:8px;background:rgba(244,241,232,.14);border-color:transparent;" href="https://${t.site}" target="_blank" rel="noopener">Team site <span class="arrow">↗</span></a>
+    <div class="crest">${esc(initials(t.name))}</div>
+    <div style="min-width:0;">
+      <h2 style="color:#f4f1e8;">${esc(t.name)}</h2>
+      <div class="meta">${esc(confName(t.conf))}${t.confRec ? " · "+esc(t.confRec)+" conf." : ""}${npiRank ? " · NPI #"+esc(npiRank) : ""}</div>
+      <div class="actions">
+        ${t.site ? `<a class="watch-link" style="background:rgba(244,241,232,.14);border-color:transparent;" href="https://${esc(t.site)}" target="_blank" rel="noopener">Team site <span class="arrow">↗</span></a>` : ""}
+        <button class="follow-btn" id="followBtn" onclick="toggleFollow(${jsArg(t.name)})"></button>
+      </div>
     </div>
-    <div class="record"><div class="figure num">${t.rec}</div><div class="figlabel">Record</div></div>`;
+    <div class="record"><div class="figure num">${esc(t.rec)}</div><div class="figlabel">Record</div></div>`;
+  setFollowBtn(document.getElementById("followBtn"), t.name);
 
   // team leaders
   const stats = teamStats[t.name];
@@ -536,7 +705,7 @@ function openTeam(name){
         </div>
       </div>
       <div class="row-trail">${g.result ? `<span class="figure num" style="font-size:.85rem;">${g.result}</span>` : `<span class="watch-chip"><span class="dot"></span>Upcoming</span>`}</div>
-    </div>`).join("") : `<div class="empty-hint">Schedule not yet pulled for this team — only Occidental's is live so far.</div>`;
+    </div>`).join("") : `<div class="empty-hint">Schedule isn't available for this team yet.</div>`;
 
   // roster
   const rosterInfo = rosters[t.name];
@@ -553,59 +722,48 @@ function openTeam(name){
     </div>`).join("") : `<div class="empty-hint">Roster not yet pulled for this team.</div>`;
 
   document.getElementById("teamNote").textContent = rosterInfo
-    ? "Real data, pulled live from " + t.name + "'s official athletics site."
-    : "Standings and record are real, pulled live from " + t.conf + "'s conference site. This team's own roster/schedule pull hasn't succeeded yet (some athletics sites block automated requests) — it's on the list to revisit.";
+    ? "From " + (t.site || t.name + "'s athletics site") + (REAL_META.conferencesDate ? ", updated " + fmtDate(REAL_META.conferencesDate) : "") + "."
+    : "Record from the " + confName(t.conf) + " standings. This team's athletics site couldn't be read, so its roster and schedule aren't here yet.";
 
   showTab("team");
+  window.scrollTo(0, 0);
 }
 
 function conferenceOf(name){
   return conferences.find(conf => (teams[conf]||[]).some(t=>t.name===name)) || null;
 }
 function rankRow(rank, name, secondary, i){
-  const conf = conferenceOf(name);
-  const clickable = conf ? ` style="cursor:pointer" onclick="openTeam(${jsArg(name)})"` : "";
+  const target = linkName(name);
+  const conf = conferenceOf(target);
+  const clickable = conf ? ` onclick="openTeam(${jsArg(target)})"` : "";
   return `
     <div class="list-row ${i<3?'top':''}">
-      <div class="rank-badge">${rank}</div>
+      <div class="rank-badge">${esc(rank)}</div>
       <div class="row-main">
-        <div class="primary"${clickable}>${name}${conf?` <span class="watch-chip">${conf}</span>`:''}</div>
-        ${secondary ? `<div class="secondary">${secondary}</div>` : ""}
+        <div class="primary${conf?' link':''}"${clickable}>${esc(name)}${conf?` <span class="watch-chip">${esc(confName(conf))}</span>`:''}</div>
+        ${secondary ? `<div class="secondary">${esc(secondary)}</div>` : ""}
       </div>
     </div>`;
 }
 
 function renderRankUC(){
   document.getElementById("rankLabel").textContent = "United Soccer Coaches D3 Top 25";
-  document.getElementById("rankNote").textContent = "From unitedsoccercoaches.org" +
-    (REAL_META.nationalFetchedAt ? ", checked " + fmtTime(REAL_META.nationalFetchedAt) + "." : ".");
+  document.getElementById("rankNote").textContent = "From unitedsoccercoaches.org.";
   document.getElementById("rankList").innerHTML = REAL_USC_POLL.length
     ? REAL_USC_POLL.map((r,i)=>rankRow(r.rank, r.team, r.rec, i)).join("")
     : `<div class="empty-hint">The coaches' poll couldn't be loaded.</div>`;
 }
 
-// NPI rows come straight from the NCAA feed; pick the rank and team columns by
-// name and show the remaining columns (record, NPI value, ...) as the subtitle.
 function renderRankNPI(){
-  document.getElementById("rankLabel").textContent = "National NPI Rankings";
+  document.getElementById("rankLabel").textContent = "NCAA NPI rankings";
   if (!REAL_NPI) {
-    document.getElementById("rankNote").textContent = "Official NCAA rankings, published weekly during the season.";
+    document.getElementById("rankNote").textContent = "Official NCAA rankings, published weekly late in the season.";
     document.getElementById("rankList").innerHTML = `<div class="empty-hint">The NCAA hasn't published NPI rankings yet.<br>Check the United Soccer Coaches tab in the meantime.</div>`;
     return;
   }
   document.getElementById("rankNote").textContent = "Official NCAA rankings" +
-    (REAL_NPI.updated ? " · " + REAL_NPI.updated : "") + ".";
-  const pick = (row, re) => Object.keys(row).find(k => re.test(k));
-  document.getElementById("rankList").innerHTML = REAL_NPI.data.map((row,i)=>{
-    const rankKey = pick(row, /^(npi\s*)?(rank|rk)\.?$/i) || pick(row, /rank/i);
-    const teamKey = pick(row, /^(team|school|name)$/i) || pick(row, /team|school/i);
-    // The nitty gritty report has many columns; the first few (record, NPI, SOS) fit.
-    const extra = Object.entries(row)
-      .filter(([k,v]) => k !== rankKey && k !== teamKey && k && v !== "" && v != null)
-      .slice(0, 4)
-      .map(([k,v]) => `${k} ${v}`).join(" · ");
-    return rankRow(rankKey ? row[rankKey] : i+1, teamKey ? row[teamKey] : "", extra, i);
-  }).join("");
+    (REAL_NPI.updated ? " · " + REAL_NPI.updated : "") + ". Regional rankings merged into one list by NPI value.";
+  document.getElementById("rankList").innerHTML = npiRows().map(npiRow).join("");
 }
 
 // Per-conference site domain for the "Real, live from X" note. Falls back
@@ -625,16 +783,16 @@ let activeStandingsConf = "SCIAC";
 function renderStandingsConfSeg(){
   const el = document.getElementById("standingsConfSeg");
   el.innerHTML = conferences.map((c,i)=>
-    `<button data-sc="${c}" class="${c===activeStandingsConf?'active':''}">${c}</button>`).join("");
+    `<button data-sc="${c}" class="${c===activeStandingsConf?'active':''}">${esc(confName(c))}</button>`).join("");
 }
 
 function renderStandings(conf){
   if(conf) activeStandingsConf = conf;
   const rows = teams[activeStandingsConf];
   const hasConf = rows.some(t=>t.confRec);
-  document.getElementById("rankLabel").textContent = activeStandingsConf + " standings";
-  document.getElementById("rankNote").textContent = `Real, live from ${conferenceSiteFor(activeStandingsConf)} — current 2026 season.` +
-    (hasConf ? "" : " Conference play hasn't started yet for most teams, so records shown are overall/non-conference only.");
+  document.getElementById("rankLabel").textContent = confName(activeStandingsConf) + " standings";
+  document.getElementById("rankNote").textContent = `From ${conferenceSiteFor(activeStandingsConf)}` +
+    (REAL_META.conferencesDate ? `, updated ${fmtDate(REAL_META.conferencesDate)}.` : ".");
   document.getElementById("rankList").innerHTML = `
     <div class="standings-scroll"><table class="standings-table">
       <thead><tr><th>#</th><th>Team</th>${hasConf?'<th>Conf</th>':''}<th>Overall</th></tr></thead>
@@ -642,7 +800,7 @@ function renderStandings(conf){
         ${rows.map((t,i)=>`
           <tr class="${i===0?'top':''}">
             <td class="rank-cell">${i+1}</td>
-            <td class="team-cell" onclick="openTeam(${jsArg(t.name)})"><span class="crest-badge sm">${t.name.slice(0,2).toUpperCase()}</span>${t.name}</td>
+            <td class="team-cell" onclick="openTeam(${jsArg(t.name)})"><span class="crest-badge sm">${esc(initials(t.name))}</span>${esc(t.name)}</td>
             ${hasConf?`<td class="num-cell">${t.confRec||"—"}</td>`:''}
             <td class="num-cell strong">${t.rec}</td>
           </tr>`).join("")}
@@ -650,10 +808,8 @@ function renderStandings(conf){
     </table></div>`;
 }
 
-// Real national stat leaders — both individual (REAL_LEADERS) and team-level
-// (REAL_TEAM_LEADERS), both pulled live via `d3soccer scrape leaders` from the
-// NCAA stats feed. All four individual categories are live now, not just
-// save % — the old "coming online next, disabled" state is gone.
+// National stat leaders, individual (REAL_LEADERS) and team (REAL_TEAM_LEADERS),
+// from the NCAA stats feed.
 const INDIVIDUAL_STAT_CATS = [
   {k:"save_pct", label:"Save %", figLabel:"SV%", valueKey:"Pct."},
   {k:"goals_per_game", label:"Goals/gm", figLabel:"G/gm", valueKey:"Per Game"},
@@ -689,7 +845,7 @@ function renderStatList(){
 
   document.getElementById("statLabel").textContent = (payload ? payload.title : catDef.label) + " — Division III, current season";
   document.getElementById("statNote").textContent = payload
-    ? "Real, live from the NCAA stats feed — " + payload.updated + "."
+    ? "From the NCAA stats feed · " + payload.updated + "."
     : "This category hasn't been pulled yet.";
 
   document.getElementById("statList").innerHTML = rows.slice(0, 25).map((r,i)=>{
@@ -723,15 +879,118 @@ function renderStatList(){
   }).join("");
 }
 
-/* ---- tabs ---- */
+/* ---- bracket ---- */
+// The round to show first: the earliest one with an unplayed game, else the last.
+function currentRound(b){
+  return b.rounds.find(r => r.games.some(g => !g.winner)) || b.rounds[b.rounds.length - 1];
+}
+let activeRound = null;
+
+function bracketSide(name, score, pk, state){
+  const target = linkName(name);
+  const conf = conferenceOf(target);
+  const npi = npiRankOf(target);
+  return `<div class="side ${state}">
+    <span class="nm"${conf ? ` style="cursor:pointer" onclick="openTeam(${jsArg(target)})"` : ""}>${esc(name)}${npi ? ` <span class="move-chip" style="background:var(--turf);color:var(--muted);">NPI ${esc(npi)}</span>` : ""}</span>
+    <span class="sc">${esc(score)}${pk ? ` <span style="font-weight:500;color:var(--muted);font-size:.75rem;">(${esc(pk)} PK)</span>` : ""}</span>
+  </div>`;
+}
+
+function renderBracket(){
+  const b = REAL_BRACKET;
+  const meta = document.getElementById("bracketMeta");
+  const seg = document.getElementById("bracketRoundSeg");
+  const body = document.getElementById("bracketBody");
+  if (!b || !b.rounds.length) {
+    meta.innerHTML = `<span>Division III men's soccer</span><span class="sep">·</span><span>Selections ${esc((b && b.announced) || "coming soon")}</span>`;
+    seg.innerHTML = "";
+    const rows = npiRows();
+    body.innerHTML = `
+      <div class="card" style="margin-top:14px;padding:16px;">
+        <div style="font-weight:600;">The field hasn't been announced yet.</div>
+        <div class="secondary" style="color:var(--muted);font-size:.82rem;margin-top:4px;line-height:1.45;">
+          Conference champions get automatic bids; the rest of the field is picked at large, with NPI as the main criterion. The full bracket goes up here as soon as it's released${b && b.announced ? " " + esc(b.announced) : ""}.
+        </div>
+      </div>
+      ${rows.length ? `<div class="section-label">Bracket watch · NPI top 25${REAL_NPI.updated ? " · " + esc(REAL_NPI.updated.replace(/^through games/i, "thru")) : ""}</div>
+      <div class="card">${rows.slice(0,25).map(npiRow).join("")}</div>
+      <div class="card teaser-row" style="margin-top:8px;" onclick="go('rankings')"><span style="font-weight:600;font-size:.86rem;">Full NPI list</span><span class="go">→</span></div>` : ""}`;
+    return;
+  }
+  meta.innerHTML = `<span>Division III men's soccer</span>${b.updated ? `<span class="sep">·</span><span>Updated ${esc(b.updated)}</span>` : ""}`;
+  if (!activeRound || !b.rounds.some(r => r.name === activeRound)) activeRound = currentRound(b).name;
+  seg.innerHTML = b.rounds.map(r => `<button data-round="${esc(r.name)}" class="${r.name===activeRound?'active':''}">${esc(r.name)}</button>`).join("");
+  const round = b.rounds.find(r => r.name === activeRound);
+  // Keep the file's order, grouping games under their host site / pod.
+  const groups = [];
+  for (const g of round.games) {
+    const key = g.group || "";
+    if (!groups.length || groups[groups.length-1].key !== key) groups.push({key, games: []});
+    groups[groups.length-1].games.push(g);
+  }
+  body.innerHTML = groups.map(gr => `
+    <div class="card" style="margin-top:12px;">
+      ${gr.key ? `<div class="bracket-group">${esc(gr.key)}</div>` : ""}
+      ${gr.games.map(g => {
+        const [sa, sb] = g.score ? g.score.split(" ")[0].split("-") : ["", ""];
+        const suffix = g.score && g.score.includes(" ") ? g.score.split(" ").slice(1).join(" ") : "";
+        const [pa, pb] = g.pk ? g.pk.split("-") : ["", ""];
+        const st = side => !g.winner ? "" : (g.winner === side ? "won" : "lost");
+        const note = [g.bye ? "First-round bye" : "", suffix, g.note].filter(Boolean).join(" · ");
+        return `<div class="bracket-game">
+          ${bracketSide(g.a, sa, pa, st("a"))}
+          ${g.bye ? "" : bracketSide(g.b || "TBD", sb, pb, st("b"))}
+          ${note ? `<div class="note">${esc(note)}</div>` : ""}
+        </div>`;
+      }).join("")}
+    </div>`).join("");
+}
+
+document.getElementById("bracketRoundSeg").addEventListener("click", e=>{
+  const btn = e.target.closest("button"); if(!btn) return;
+  activeRound = btn.dataset.round;
+  renderBracket();
+});
+
+/* ---- tabs & links ---- */
+// URLs: #bracket, #rankings, #stats, #teams, #team/<name>, so any view can be shared.
+const TABS = ["home", "teams", "bracket", "rankings", "stats"];
 function showTab(name){
   document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
   document.getElementById("panel-"+name).classList.add("active");
-  document.querySelectorAll(".tabbar button").forEach(b=>b.classList.toggle("active", b.dataset.tab===name));
+  const tab = name === "team" ? "teams" : name;
+  document.querySelectorAll(".tabbar button").forEach(b=>b.classList.toggle("active", b.dataset.tab===tab));
+  if (name !== "team") document.title = "Pitch Sheet" + (name === "home" ? " · D3 Men's Soccer" : " · " + document.querySelector(`.tabbar button[data-tab=${name}]`).textContent.trim());
 }
+function go(tab){
+  history.pushState(null, "", tab === "home" ? location.pathname + location.search : "#" + tab);
+  showTab(tab);
+  window.scrollTo(0, 0);
+}
+function route(){
+  const h = decodeURIComponent(location.hash.slice(1));
+  if (h.startsWith("team/") && findTeam(h.slice(5))) openTeam(h.slice(5), true);
+  else showTab(TABS.includes(h) ? h : "home");
+}
+window.addEventListener("popstate", route);
 document.querySelectorAll(".tabbar button").forEach(b=>{
-  b.addEventListener("click", ()=> showTab(b.dataset.tab));
+  b.addEventListener("click", ()=> go(b.dataset.tab));
 });
+
+/* ---- theme ---- */
+function applyTheme(t){
+  if (t) document.documentElement.dataset.theme = t; else delete document.documentElement.dataset.theme;
+}
+applyTheme(store.get("theme", null));
+document.getElementById("themeBtn").addEventListener("click", ()=>{
+  const dark = document.documentElement.dataset.theme
+    ? document.documentElement.dataset.theme === "dark"
+    : matchMedia("(prefers-color-scheme: dark)").matches;
+  const next = dark ? "light" : "dark";
+  applyTheme(next); store.set("theme", next);
+});
+
+document.getElementById("teamSearch").addEventListener("input", e => renderSearch(e.target.value));
 
 document.getElementById("confSeg").addEventListener("click", e=>{
   const btn = e.target.closest("button"); if(!btn) return;
@@ -775,7 +1034,8 @@ document.getElementById("statSeg").addEventListener("click", e=>{
 
 /* ---- init ---- */
 renderLive();
-renderHomeStandings();
+renderHomeBracket();
+renderHomeNpi();
 renderHomeLeaders();
 renderFollowed();
 renderConfSeg();
@@ -789,4 +1049,6 @@ if (REAL_NPI) {
 renderStatGroupSeg();
 renderStatSeg();
 renderStatList();
+renderBracket();
+route();
 </script>

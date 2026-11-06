@@ -110,3 +110,60 @@ def match_one(name: str, registry: list[str]) -> str | None:
         return exact[0]
     hits = [r for r in registry if t <= tokens(r) or tokens(r) <= t]
     return hits[0] if len(hits) == 1 else None
+
+
+# National feeds (NCAA NPI, coaches' poll, the bracket) name teams with their own
+# abbreviations and are matched against every conference's registry at once, where
+# short names like "Trinity" are ambiguous. These go straight to a registry name.
+NATIONAL_ALIASES = {
+    "cwru": "Case Western Reserve",
+    "uchicago": "Chicago",
+    "washu": "Washington University in St. Louis",
+    "cms": "Claremont-Mudd-Scripps",
+    "trinity (tx)": "Trinity University",
+    "trinity (conn.)": "Trinity",
+    "trinity (ct)": "Trinity",
+    "north central (il)": "North Central College",
+    "north central (ill.)": "North Central College",
+    "plattsburgh st.": "SUNY Plattsburgh",
+    "plattsburgh state": "SUNY Plattsburgh",
+    "wis.-superior": "University of Wisconsin-Superior",
+    "wisconsin-superior": "University of Wisconsin-Superior",
+}
+
+# Abbreviations the NCAA uses inside names: "Montclair St.", "Wis.-Platteville".
+_NATIONAL_EXPANSIONS = [
+    (re.compile(r"\bSt\.$"), "State"),
+    (re.compile(r"\bWis\.-"), "Wisconsin-"),
+    (re.compile(r"\bIll\. "), "Illinois "),
+    (re.compile(r"\bChris\. "), "Christopher "),
+    (re.compile(r"\bWash\. "), "Washington "),
+]
+
+
+def match_national(names: list[str], registry: list[str]) -> dict[str, str]:
+    """
+    Map national-feed team names to registry names across all conferences. Each
+    name is matched on its own (the poll and NPI both name the same teams): an
+    alias, else an exact token match, else a unique registry name that contains all
+    of its words. Not the reverse: "Roger Williams" is not "Williams".
+    """
+    reg = set(registry)
+    reg_tokens = {r: tokens(r) for r in registry}
+    out: dict[str, str] = {}
+    for n in dict.fromkeys(names):
+        alias = NATIONAL_ALIASES.get(clean(n).lower())
+        if alias in reg:
+            out[n] = alias
+            continue
+        expanded = clean(n)
+        for pattern, repl in _NATIONAL_EXPANSIONS:
+            expanded = pattern.sub(repl, expanded)
+        t = tokens(expanded)
+        if not t:
+            continue
+        exact = [r for r, rt in reg_tokens.items() if rt == t]
+        hits = exact or [r for r, rt in reg_tokens.items() if t <= rt]
+        if len(hits) == 1:
+            out[n] = hits[0]
+    return out
