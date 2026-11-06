@@ -129,7 +129,18 @@ NATIONAL_ALIASES = {
     "plattsburgh state": "SUNY Plattsburgh",
     "wis.-superior": "University of Wisconsin-Superior",
     "wisconsin-superior": "University of Wisconsin-Superior",
+    "wesleyan (ct)": "Wesleyan",
+    "westconn": "Western Connecticut",
+    "bridgewater (va)": "Bridgewater College",
+    "bridgewater st.": "Bridgewater State",
+    "stevens": "Stevens Institute of Technology",
+    "thomas (me)": "Thomas College",
+    "st. thomas (tx)": "University of St. Thomas (Houston)",
+    "rochester (ny)": "Rochester",
 }
+
+# A trailing state tag the registry name doesn't carry: "Southwestern (TX)".
+_STATE_TAG = re.compile(r"\s*\([A-Za-z. ]{2,6}\)$")
 
 # Abbreviations the NCAA uses inside names: "Montclair St.", "Wis.-Platteville".
 _NATIONAL_EXPANSIONS = [
@@ -152,18 +163,21 @@ def match_national(names: list[str], registry: list[str]) -> dict[str, str]:
     reg_tokens = {r: tokens(r) for r in registry}
     out: dict[str, str] = {}
     for n in dict.fromkeys(names):
-        alias = NATIONAL_ALIASES.get(clean(n).lower())
+        # Raw name first: clean() would strip "WashU" to "Wash" as a clinch marker.
+        alias = NATIONAL_ALIASES.get(n.strip().lower()) or NATIONAL_ALIASES.get(clean(n).lower())
         if alias in reg:
             out[n] = alias
             continue
         expanded = clean(n)
         for pattern, repl in _NATIONAL_EXPANSIONS:
             expanded = pattern.sub(repl, expanded)
-        t = tokens(expanded)
-        if not t:
-            continue
-        exact = [r for r, rt in reg_tokens.items() if rt == t]
-        hits = exact or [r for r, rt in reg_tokens.items() if t <= rt]
-        if len(hits) == 1:
-            out[n] = hits[0]
+        for candidate in dict.fromkeys([expanded, _STATE_TAG.sub("", expanded)]):
+            t = tokens(candidate)
+            if not t:
+                continue
+            exact = [r for r, rt in reg_tokens.items() if rt == t]
+            hits = exact or [r for r, rt in reg_tokens.items() if t <= rt]
+            if len(hits) == 1:
+                out[n] = hits[0]
+                break
     return out

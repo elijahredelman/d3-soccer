@@ -25,4 +25,6 @@ def test_parse_space_separated_paste_adds_rank_and_caps_rows():
 
 def test_template_without_a_table_falls_back_to_feed():
     assert npi_paste.parse("# instructions\n# as of\n") is None
-    assert npi_paste.load() is None  # the committed data/npi.txt is just the template
+    # The committed data/npi.txt is either the empty template or a parseable table.
+    committed = npi_paste.load()
+    assert committed is None or committed["data"]
