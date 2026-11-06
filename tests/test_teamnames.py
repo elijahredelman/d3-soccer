@@ -61,6 +61,8 @@ def test_match_national_handles_ncaa_abbreviations_across_conferences():
         "Lawrence University",
         "Washington and Lee University",
         "Washington College",
+        "Washington University in St. Louis",
+        "Southwestern University",
     ]
     names = [
         "Ill. Wesleyan",
@@ -71,6 +73,8 @@ def test_match_national_handles_ncaa_abbreviations_across_conferences():
         "Williams College",
         "Suffolk",
         "Roger Williams University",
+        "WashU",
+        "Southwestern (TX)",
         # The poll and NPI name the same team differently; both must link to it.
         "St. Lawrence University",
         "St. Lawrence",
@@ -88,4 +92,6 @@ def test_match_national_handles_ncaa_abbreviations_across_conferences():
         "St. Lawrence": "St. Lawrence",
         "Washington & Lee University": "Washington and Lee University",
         "Wash. & Lee": "Washington and Lee University",
+        "WashU": "Washington University in St. Louis",
+        "Southwestern (TX)": "Southwestern University",
     }

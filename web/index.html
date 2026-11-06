@@ -120,8 +120,10 @@ a{ color:inherit; text-decoration:none; }
 .trend{ font-size:.7rem; padding:2px 6px; border-radius:20px; font-weight:700; }
 .trend.up{ background:#d9ead9; color:#2f6b2f; }
 .trend.down{ background:#f1d9d6; color:var(--danger); }
-:root:not([data-theme="light"]) .trend.up, :root[data-theme="dark"] .trend.up{ background:#19301c; color:#8fd39a; }
-:root:not([data-theme="light"]) .trend.down, :root[data-theme="dark"] .trend.down{ background:#341c19; color:#e5988c; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .trend.up{ background:#19301c; color:#8fd39a; } }
+:root[data-theme="dark"] .trend.up{ background:#19301c; color:#8fd39a; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .trend.down{ background:#341c19; color:#e5988c; } }
+:root[data-theme="dark"] .trend.down{ background:#341c19; color:#e5988c; }
 
 /* ---- pill tabs (segmented) ---- */
 .seg{ display:flex; gap:6px; overflow-x:auto; padding:2px; scrollbar-width:none; }
@@ -164,7 +166,8 @@ a{ color:inherit; text-decoration:none; }
   font-size:.62rem; font-weight:700; text-transform:uppercase; color:var(--gold-ink);
   background: color-mix(in srgb, var(--gold) 22%, transparent); padding:2px 6px; border-radius:5px;
 }
-:root:not([data-theme="light"]) .roster-row .pos, :root[data-theme="dark"] .roster-row .pos{ color:#e7c877; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .roster-row .pos{ color:#e7c877; } }
+:root[data-theme="dark"] .roster-row .pos{ color:#e7c877; }
 
 .empty-hint{ padding:22px 14px; text-align:center; color:var(--muted); font-size:.85rem; }
 
@@ -182,7 +185,8 @@ a{ color:inherit; text-decoration:none; }
 }
 .tabbar button .ic{ font-size:1.05rem; }
 .tabbar button.active{ color:var(--pitch); }
-:root:not([data-theme="light"]) .tabbar button.active, :root[data-theme="dark"] .tabbar button.active{ color:#8fd39a; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .tabbar button.active{ color:#8fd39a; } }
+:root[data-theme="dark"] .tabbar button.active{ color:#8fd39a; }
 
 .tab-panel{ display:none; animation: fade .2s ease; }
 .tab-panel.active{ display:block; }
@@ -252,7 +256,8 @@ a{ color:inherit; text-decoration:none; }
 /* ---- rank movement chip ---- */
 .move-chip{ font-size:.66rem; font-weight:700; padding:1px 5px; border-radius:5px; }
 .move-chip.new{ background: color-mix(in srgb, var(--gold) 22%, transparent); color:var(--gold-ink); }
-:root:not([data-theme="light"]) .move-chip.new, :root[data-theme="dark"] .move-chip.new{ color:#e7c877; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .move-chip.new{ color:#e7c877; } }
+:root[data-theme="dark"] .move-chip.new{ color:#e7c877; }
 
 /* ---- stat category buttons: disabled/coming-soon ---- */
 .seg button:disabled{ opacity:.4; cursor:default; }
@@ -526,12 +531,14 @@ function npiRows(){
     const rankKey = pick(row, /^(npi\s*)?(rank|rk)\.?$/i);
     const teamKey = pick(row, /^(team|school|name)$/i) || pick(row, /team|school/i);
     const npiKey = pick(row, /^npi$/i);
-    const recKey = pick(row, /record|^w-l/i);
+    const recKey = pick(row, /record|^w-l|wl$/i);
+    const prevKey = pick(row, /^prev/i);
     const regionKey = pick(row, /^region$/i);
     return {
       rank: rankKey ? row[rankKey] : String(i+1), team: teamKey ? row[teamKey] : "",
-      npi: npiKey ? row[npiKey] : "", rec: recKey ? row[recKey] : "", region: regionKey ? row[regionKey] : "",
-      row, used: [rankKey, teamKey, npiKey, recKey, regionKey, pick(row, /regional rank/i)],
+      npi: npiKey ? row[npiKey] : "", rec: recKey ? row[recKey] : "",
+      region: regionKey ? row[regionKey].replace(/^region/i, "Region") : "",
+      prev: prevKey ? row[prevKey] : "",
     };
   });
 }
@@ -539,16 +546,16 @@ function npiRows(){
 function npiRow(r, i){
   const name = linkName(r.team);
   const conf = conferenceOf(name);
-  // Any extra columns (a pasted nitty-gritty table has many) after record/region.
-  const extra = Object.entries(r.row).filter(([k,v]) => k && !r.used.includes(k) && v !== "" && v != null)
-    .slice(0, 2).map(([k,v]) => `${k} ${v}`);
-  const sub = [r.rec, r.region, ...extra].filter(Boolean).map(esc).join(" · ");
+  const sub = [r.rec, r.region].filter(Boolean).map(esc).join(" · ");
+  // Movement since the last release (pasted tables carry a PrevNPI column).
+  const moved = r.prev && +r.prev && +r.rank ? +r.prev - +r.rank : 0;
+  const move = moved ? ` <span class="trend ${moved > 0 ? "up" : "down"}">${moved > 0 ? "▲" : "▼"}${Math.abs(moved)}</span>` : "";
   return `
     <div class="list-row ${i<3?'top':''}">
       <div class="rank-badge">${esc(r.rank)}</div>
       <div class="row-main">
         <div class="primary${conf?' link':''}"${conf?` onclick="openTeam(${jsArg(name)})"`:""}>${esc(r.team)}${conf?` <span class="watch-chip">${esc(confName(conf))}</span>`:""}</div>
-        ${sub ? `<div class="secondary">${sub}</div>` : ""}
+        ${sub || move ? `<div class="secondary">${sub}${move}</div>` : ""}
       </div>
       ${r.npi ? `<div class="row-trail"><div class="figure num">${esc(r.npi)}</div><div class="figlabel">NPI</div></div>` : ""}
     </div>`;
@@ -763,7 +770,7 @@ function renderRankNPI(){
     return;
   }
   document.getElementById("rankNote").textContent = "Official NCAA rankings" +
-    (REAL_NPI.updated ? " · " + REAL_NPI.updated : "") + ". Regional rankings merged into one list by NPI value.";
+    (REAL_NPI.updated ? " · " + REAL_NPI.updated : "") + ". Arrows show movement since the previous release.";
   document.getElementById("rankList").innerHTML = npiRows().map(npiRow).join("");
 }
 
