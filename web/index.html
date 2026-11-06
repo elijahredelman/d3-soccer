@@ -430,7 +430,6 @@ const fmtTime = iso => new Date(iso)
 // Safe single-quoted JS string for inline onclick handlers (names like "Saint John's").
 const jsArg = s => "'" + String(s).replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, "&quot;") + "'";
 
-const conferences = REAL_CONFERENCES;
 // Scraper keys -> how people write them.
 const CONF_NAMES = {
   UNITED_EAST: "United East", ATLANTIC_EAST: "Atlantic East", MAC_COMMONWEALTH: "MAC Commonwealth",
@@ -438,6 +437,8 @@ const CONF_NAMES = {
   "Northwest Conference": "Northwest", Centennial: "Centennial", "Liberty League": "Liberty League",
 };
 const confName = c => CONF_NAMES[c] || c;
+// Alphabetical by the name people know them by.
+const conferences = [...REAL_CONFERENCES].sort((x, y) => confName(x).localeCompare(confName(y), "en", {sensitivity: "base"}));
 const esc = s => String(s ?? "").replace(/[&<>"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));
 const initials = name => name.replace(/^(University of|The|College of)\s+/i, "").slice(0,2).toUpperCase();
 // National feeds (NPI, poll, bracket) spell names their own way; map to our team pages.
@@ -778,7 +779,7 @@ function conferenceSiteFor(conf){
   const rows = teams[conf] || [];
   return (rows[0] && rows[0].site) || "the conference's site";
 }
-let activeStandingsConf = "SCIAC";
+let activeStandingsConf = conferences[0];
 
 function renderStandingsConfSeg(){
   const el = document.getElementById("standingsConfSeg");
