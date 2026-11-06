@@ -14,6 +14,9 @@ site reads directly:
                     ({updated, data: [...]}), or null
   REAL_SCOREBOARD   [ {status, home, away, hs, as, conf, time, clock} ] for today
   REAL_USC_POLL     [ {rank, team, rec} ] United Soccer Coaches Top 25
+  REAL_BRACKET      hand-kept NCAA tournament bracket (data/bracket.txt), or null
+  REAL_TEAM_LINKS   national-feed team name -> registry team name, so NPI, poll and
+                    bracket rows link to that team's page
   REAL_META         {conferencesDate, nationalFetchedAt, nationalDate, built}
 
     uv run d3soccer build
@@ -25,7 +28,7 @@ from datetime import UTC, datetime
 
 from d3soccer import teamnames
 from d3soccer.config import APP_DATA_JS
-from d3soccer.pipelines import npi_paste, snapshots
+from d3soccer.pipelines import bracket, npi_paste, snapshots
 
 DISPLAY_ORDER = [
     "SCIAC",
@@ -298,6 +301,11 @@ def compact_npi(payload):
     return {**payload, "data": [{"RANK": str(i), **r} for i, r in enumerate(rows, 1)]}
 
 
+def _team_key(row: dict) -> str:
+    """The team-name column of an NPI row ("SCHOOL" from the feed, "Team" when pasted)."""
+    return next((k for k in row if re.fullmatch(r"team|school|name", k, re.I)), "")
+
+
 def _js(name, value):
     return f"const {name} = " + json.dumps(value, separators=(",", ":"), ensure_ascii=False) + ";\n"
 
@@ -333,6 +341,15 @@ def run():
 
     # The pasted official table wins over the feed, which has been empty all season.
     npi = npi_paste.load() or compact_npi(national.get("npi_rankings"))
+    usc_poll = compact_usc_poll(national.get("usc_poll"))
+    tournament = bracket.load()
+    national_names = [r["team"] for r in usc_poll]
+    if npi and npi.get("data"):
+        national_names += [r.get(_team_key(r), "") for r in npi["data"]]
+    for rnd in (tournament or {}).get("rounds", []):
+        national_names += [n for g in rnd["games"] for n in (g["a"], g["b"]) if n]
+    links = teamnames.match_national([n for n in national_names if n], list(teams))
+
     meta = {
         "conferencesDate": conferences_date(),
         "nationalFetchedAt": national.get("fetched_at"),
@@ -353,7 +370,9 @@ def run():
         f.write(_js("REAL_TEAM_LEADERS", national.get("team_leaders", {})))
         f.write(_js("REAL_NPI", npi if npi and npi.get("data") else None))
         f.write(_js("REAL_SCOREBOARD", compact_scoreboard(national.get("scoreboard"))))
-        f.write(_js("REAL_USC_POLL", compact_usc_poll(national.get("usc_poll"))))
+        f.write(_js("REAL_USC_POLL", usc_poll))
+        f.write(_js("REAL_BRACKET", tournament))
+        f.write(_js("REAL_TEAM_LINKS", {k: v for k, v in links.items() if k != v}))
         f.write(_js("REAL_META", meta))
 
     print(f"{len(rosters)} rosters, {len(schedules)} schedules, {len(stats)} team-stat sets")

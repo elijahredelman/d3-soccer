@@ -45,3 +45,47 @@ def test_match_one_rejects_ambiguous_names():
     assert teamnames.match_one("UW-Whitewater", registry) == "Wisconsin-Whitewater"
     assert teamnames.match_one("Wisconsin", registry) is None
     assert teamnames.match_one("Wisconsin Lutheran", registry) is None
+
+
+def test_match_national_handles_ncaa_abbreviations_across_conferences():
+    registry = [
+        "Wesleyan",
+        "Illinois Wesleyan University",
+        "Trinity",
+        "Trinity University",
+        "Case Western Reserve",
+        "Montclair State",
+        "Wisconsin-Platteville",
+        "Williams",
+        "St. Lawrence",
+        "Lawrence University",
+        "Washington and Lee University",
+        "Washington College",
+    ]
+    names = [
+        "Ill. Wesleyan",
+        "Trinity (TX)",
+        "CWRU",
+        "Montclair St.",
+        "Wis.-Platteville",
+        "Williams College",
+        "Suffolk",
+        "Roger Williams University",
+        # The poll and NPI name the same team differently; both must link to it.
+        "St. Lawrence University",
+        "St. Lawrence",
+        "Washington & Lee University",
+        "Wash. & Lee",
+    ]
+    assert teamnames.match_national(names, registry) == {
+        "Ill. Wesleyan": "Illinois Wesleyan University",
+        "Trinity (TX)": "Trinity University",
+        "CWRU": "Case Western Reserve",
+        "Montclair St.": "Montclair State",
+        "Wis.-Platteville": "Wisconsin-Platteville",
+        "Williams College": "Williams",
+        "St. Lawrence University": "St. Lawrence",
+        "St. Lawrence": "St. Lawrence",
+        "Washington & Lee University": "Washington and Lee University",
+        "Wash. & Lee": "Washington and Lee University",
+    }
