@@ -22,6 +22,12 @@ def cmd_build(args: argparse.Namespace) -> None:
     app_data.run()
 
 
+def cmd_live(args: argparse.Namespace) -> None:
+    from d3soccer.pipelines import live
+
+    live.run()
+
+
 def cmd_probe(args: argparse.Namespace) -> None:
     from d3soccer.pipelines import probe
 
@@ -54,6 +60,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     build = sub.add_parser("build", help="regenerate web/app_data.js from the latest snapshots")
     build.set_defaults(func=cmd_build)
+
+    live = sub.add_parser(
+        "live", help="write today's scores and box scores into web/ (run after build)"
+    )
+    live.set_defaults(func=cmd_live)
 
     probe = sub.add_parser("probe", help="fetch pages and describe their markup, to fix parsers")
     probe.add_argument("urls", nargs="*")

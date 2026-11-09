@@ -38,7 +38,9 @@ INTERESTING_CLASS = re.compile(r"roster|schedule|standing|stats|player|game", re
 def describe(url: str, links: str | None = None, dump: list[str] | None = None) -> list[str]:
     try:
         # Same Chrome-like client the scrapers use, so the probe sees what they see.
-        resp = http.get_raw(url, timeout=20)
+        # The Origin header makes servers that answer CORS per request say so.
+        origin = {"Origin": "https://elijahredelman.github.io"}
+        resp = http.get_raw(url, timeout=20, headers=origin)
     except http.RequestException as e:
         return [f"  ERROR {type(e).__name__}: {e}"]
     out = [
@@ -47,6 +49,10 @@ def describe(url: str, links: str | None = None, dump: list[str] | None = None) 
     ]
     if resp.url != url:
         out.append(f"  redirected to {resp.url}")
+    # Whether a browser page on another site may read this response (live polling).
+    out.append(
+        f"  access-control-allow-origin: {resp.headers.get('access-control-allow-origin')!r}"
+    )
 
     if "json" in resp.headers.get("content-type", ""):
         try:
@@ -61,6 +67,11 @@ def describe(url: str, links: str | None = None, dump: list[str] | None = None) 
             if isinstance(data.get("data"), list):
                 out.append(f"  data rows: {len(data['data'])}")
                 out += [f"    {json.dumps(r)[:240]}" for r in data["data"][:2]]
+            else:  # e.g. a box score: show the start of the payload itself
+                text = json.dumps(data)
+                out.append(f"  json: {text[:3000]}")
+                if len(text) > 3000:
+                    out.append(f"  ...json end: {text[-3000:]}")
         else:
             out.append(f"  {type(data).__name__} of {len(data)}")
         return out
