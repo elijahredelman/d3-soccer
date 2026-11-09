@@ -47,6 +47,10 @@ def describe(url: str, links: str | None = None, dump: list[str] | None = None) 
     ]
     if resp.url != url:
         out.append(f"  redirected to {resp.url}")
+    # Whether a browser page on another site may read this response (live polling).
+    out.append(
+        f"  access-control-allow-origin: {resp.headers.get('access-control-allow-origin')!r}"
+    )
 
     if "json" in resp.headers.get("content-type", ""):
         try:
@@ -61,6 +65,8 @@ def describe(url: str, links: str | None = None, dump: list[str] | None = None) 
             if isinstance(data.get("data"), list):
                 out.append(f"  data rows: {len(data['data'])}")
                 out += [f"    {json.dumps(r)[:240]}" for r in data["data"][:2]]
+            else:  # e.g. a box score: show the start of the payload itself
+                out.append(f"  json: {json.dumps(data)[:6000]}")
         else:
             out.append(f"  {type(data).__name__} of {len(data)}")
         return out
