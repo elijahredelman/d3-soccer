@@ -42,9 +42,15 @@ Two GitHub Actions workflows in `.github/workflows/`:
 
 ## NCAA tournament bracket
 
-The NCAA doesn't publish the bracket as a feed, so it lives in `data/bracket.txt`, edited
-by hand: type in the matchups when the field is announced and fill in scores as games
-finish (the file's header shows the format). Team names can be the NCAA's short forms
+The NCAA doesn't publish the bracket as a feed, so the matchups live in
+`data/bracket.txt`, typed in once when the field is announced (the file's header shows the
+format). Scores fill in by themselves: the national scrape saves every final it sees, the
+site matches finals and live games from the NCAA scoreboard to bracket games on or after
+the file's `starts` date, and winners advance into the next round's slots. A score typed
+into the file always wins.
+
+While the site is open it re-polls the NCAA scoreboard feed every minute, so live scores
+move without a redeploy, and each score card links to the game's live stats on ncaa.com. Team names can be the NCAA's short forms
 ("CWRU", "Wash. & Lee"); they link to team pages automatically. Until the file has
 games, the site's **Bracket** tab shows the announcement date and the NPI top 25.
 

@@ -12,7 +12,9 @@ site reads directly:
   REAL_TEAM_LEADERS team-level national leader category -> raw NCAA-API payload
   REAL_NPI          pasted NPI table (data/npi.txt) or the raw NCAA-API NPI payload
                     ({updated, data: [...]}), or null
-  REAL_SCOREBOARD   [ {status, home, away, hs, as, conf, time, clock} ] for today
+  REAL_SCOREBOARD   [ {id, status, home, away, hs, as, win, conf, time, clock} ] for today
+  REAL_FINALS       finals from earlier scoreboards involving bracket teams, same shape,
+                    so the bracket fills in results without anyone typing them
   REAL_USC_POLL     [ {rank, team, rec} ] United Soccer Coaches Top 25
   REAL_BRACKET      hand-kept NCAA tournament bracket (data/bracket.txt), or null
   REAL_TEAM_LINKS   national-feed team name -> registry team name, so NPI, poll and
@@ -241,6 +243,8 @@ def compact_scoreboard(payload):
         confs = (home.get("conferences") or [{}])[0]
         status = g.get("gameState") or "pre"
         row = {
+            # ncaa.com/game/<id> has the live box score and play-by-play.
+            "id": str(g.get("gameID") or "").strip(),
             "status": status,
             "home": home.get("names", {}).get("short", ""),
             "away": away.get("names", {}).get("short", ""),
@@ -249,6 +253,8 @@ def compact_scoreboard(payload):
         }
         if status != "pre":
             row["hs"], row["as"] = home.get("score", ""), away.get("score", "")
+        if status == "final" and (home.get("winner") or away.get("winner")):
+            row["win"] = "home" if home.get("winner") else "away"  # decides PK games
         else:
             row["time"] = g.get("startTime") or "TBA"
         if status == "live":
@@ -301,6 +307,12 @@ def compact_npi(payload):
     return {**payload, "data": [{"RANK": str(i), **r} for i, r in enumerate(rows, 1)]}
 
 
+def _iso(mdy: str) -> str:
+    """Scoreboard "MM/DD/YYYY" -> "YYYY-MM-DD" ("" if malformed)."""
+    m = re.fullmatch(r"(\d{2})/(\d{2})/(\d{4})", mdy)
+    return f"{m.group(3)}-{m.group(1)}-{m.group(2)}" if m else ""
+
+
 def _team_key(row: dict) -> str:
     """The team-name column of an NPI row ("SCHOOL" from the feed, "Team" when pasted)."""
     return next((k for k in row if re.fullmatch(r"team|school|name", k, re.I)), "")
@@ -346,11 +358,32 @@ def run():
     national_names = [r["team"] for r in usc_poll]
     if npi and npi.get("data"):
         national_names += [r.get(_team_key(r), "") for r in npi["data"]]
-    for rnd in (tournament or {}).get("rounds", []):
-        for g in rnd["games"]:
-            # Later rounds name a slot by its feeder game: "Williams / John Jay".
-            national_names += [t for n in (g["a"], g["b"]) for t in n.split(" / ") if t]
+    bracket_names = {
+        # Later rounds name a slot by its feeder game: "Williams / John Jay".
+        t
+        for rnd in (tournament or {}).get("rounds", [])
+        for g in rnd["games"]
+        for n in (g["a"], g["b"])
+        for t in n.split(" / ")
+        if t
+    }
+    scoreboard = compact_scoreboard(national.get("scoreboard"))
+    finals = list((national.get("finals") or {}).values())
+    national_names += sorted(bracket_names)
+    national_names += [r[side] for r in scoreboard + finals for side in ("home", "away")]
     links = teamnames.match_national([n for n in national_names if n], list(teams))
+    # Only finals the bracket can use; the site matches them to its games.
+    in_bracket = bracket_names | {links.get(n, n) for n in bracket_names}
+    starts = (tournament or {}).get("starts") or "9999-12-31"
+    finals = sorted(
+        (
+            r
+            for r in finals
+            if _iso(r.get("date", "")) >= starts
+            and all(r[s] in in_bracket or links.get(r[s]) in in_bracket for s in ("home", "away"))
+        ),
+        key=lambda r: r["epoch"],
+    )
 
     meta = {
         "conferencesDate": conferences_date(),
@@ -371,7 +404,8 @@ def run():
         f.write(_js("REAL_LEADERS", national.get("leaders", {})))
         f.write(_js("REAL_TEAM_LEADERS", national.get("team_leaders", {})))
         f.write(_js("REAL_NPI", npi if npi and npi.get("data") else None))
-        f.write(_js("REAL_SCOREBOARD", compact_scoreboard(national.get("scoreboard"))))
+        f.write(_js("REAL_SCOREBOARD", scoreboard))
+        f.write(_js("REAL_FINALS", finals))
         f.write(_js("REAL_USC_POLL", usc_poll))
         f.write(_js("REAL_BRACKET", tournament))
         f.write(_js("REAL_TEAM_LINKS", {k: v for k, v in links.items() if k != v}))

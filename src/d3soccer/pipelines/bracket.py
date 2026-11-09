@@ -8,6 +8,8 @@ finish. Format (see the file's header for a worked example):
     # announced: Monday, Nov. 9        date shown before the bracket is out
     # as of: Nov. 15                    "updated" date shown with the bracket
     # info: Final Dec. 5 in Columbus    a line shown under the bracket title
+    # starts: 2026-11-13                first game day; scoreboard results from then on
+                                        fill in games that have no score typed in
     ## First round                      a round
     ### Williamstown, Mass.             optional group (pod / host site) in a round
     Williams (11-2-3) | Amherst | 2-1 | Sat. 1 p.m.     (a record after a name is optional)
@@ -29,7 +31,7 @@ from d3soccer.config import BRACKET_FILE
 _SCORE = re.compile(
     r"^(\d+)\s*-\s*(\d+)(?:\s*\((\d+)\s*-\s*(\d+)\s*(?:PK|pk|PKs|pks)?\))?\s*(\w+)?$"
 )
-_META = re.compile(r"#\s*(announced|as of|info)\s*:?\s*(.*)", re.I)
+_META = re.compile(r"#\s*(announced|as of|info|starts)\s*:?\s*(.*)", re.I)
 # A team's record after its name, as the NCAA bracket prints it: "Williams (11-2-3)".
 _RECORD = re.compile(r"^(.*?)\s*\((\d+-\d+(?:-\d+)?)\)$")
 
@@ -74,7 +76,7 @@ def _game(line: str, group: str) -> dict:
 
 def parse(text: str) -> dict:
     """{announced, updated, rounds: [{name, games: [...]}]}; rounds empty until filled in."""
-    out: dict = {"announced": "", "updated": "", "info": "", "rounds": []}
+    out: dict = {"announced": "", "updated": "", "info": "", "starts": "", "rounds": []}
     group = ""
     for raw in text.splitlines():
         line = raw.strip()
@@ -89,6 +91,7 @@ def parse(text: str) -> dict:
             m = _META.match(line)
             if m:
                 key = {"announced": "announced", "as of": "updated", "info": "info"}
+                key["starts"] = "starts"
                 out[key[m.group(1).lower()]] = m.group(2).strip()
         elif out["rounds"]:
             out["rounds"][-1]["games"].append(_game(line, group))

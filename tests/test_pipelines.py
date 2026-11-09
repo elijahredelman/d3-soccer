@@ -87,3 +87,26 @@ def test_national_keeps_previous_npi_when_feed_fails(snapshot_dir, monkeypatch):
     assert [p.name for p in snapshot_dir.iterdir()] == [
         f"national_snapshot_{out['generated']}.json"
     ]
+
+
+def test_merge_finals_keeps_old_finals_and_drops_stale_ones():
+    from d3soccer.pipelines.national import merge_finals
+
+    def game(gid, state, epoch, home_wins=True):
+        side = lambda name, won: {"names": {"short": name}, "score": "1", "winner": won}  # noqa: E731
+        return {
+            "game": {
+                "gameID": gid,
+                "gameState": state,
+                "startTimeEpoch": str(epoch),
+                "home": side("Tufts", home_wins),
+                "away": side("Amherst", not home_wins),
+            }
+        }
+
+    now = 100 * 86400
+    previous = {"old": {"id": "old", "epoch": 1}, "kept": {"id": "kept", "epoch": now - 86400}}
+    board = {"games": [game("1", "final", now, home_wins=False), game("2", "live", now)]}
+    out = merge_finals(previous, board, now)
+    assert set(out) == {"kept", "1"}  # stale "old" dropped, live game "2" not a final
+    assert out["1"]["win"] == "away" and out["1"]["hs"] == out["1"]["as"] == "1"

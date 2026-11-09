@@ -2,10 +2,16 @@ name: Refresh data
 
 # Scrapes fresh data, commits the new snapshots to main, then redeploys the site.
 #   every 2 hours: national (scores, leaders, NPI, coaches' poll), about a dozen requests
+#                  (more often on NCAA tournament weekends, see below)
 #   daily:         everything, including all conferences' standings/rosters/schedules/stats
 on:
   schedule:
     - cron: "17 */2 * * *"
+    # NCAA tournament weekends (Nov. 13-15, 20-22, Dec. 3-6): every 30 minutes Fri-Sun so
+    # the bracket and scores keep up for visitors whose browsers can't poll the feed.
+    # Remove after the final.
+    - cron: "17,47 * 13-15,20-22 11 *"
+    - cron: "17,47 * 3-6 12 *"
     - cron: "41 9 * * *" # 2:41am Pacific / 5:41am Eastern
   workflow_dispatch:
     inputs:

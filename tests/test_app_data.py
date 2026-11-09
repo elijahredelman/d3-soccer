@@ -88,6 +88,24 @@ def test_compact_scoreboard_orders_live_upcoming_final():
     assert app_data.compact_scoreboard(None) == []
 
 
+def test_compact_scoreboard_keeps_game_id_and_winner():
+    side = lambda name, won: {"names": {"short": name}, "score": "1", "winner": won}  # noqa: E731
+    payload = {
+        "games": [
+            {
+                "game": {
+                    "gameID": "6664380",
+                    "gameState": "final",
+                    "home": side("Tufts", True),
+                    "away": side("Amherst", False),
+                }
+            }
+        ]
+    }
+    (row,) = app_data.compact_scoreboard(payload)
+    assert row["id"] == "6664380" and row["win"] == "home"
+
+
 def test_compact_usc_poll_drops_previous_rank_stored_as_record():
     rows = [
         {"rank": 1, "team": "St. Olaf", "record": "1"},
