@@ -307,6 +307,7 @@ a{ color:inherit; text-decoration:none; }
 .bracket-game .side .nm{ font-weight:600; }
 .bracket-game .side.lost .nm, .bracket-game .side.lost .sc{ color:var(--muted); font-weight:500; }
 .bracket-game .side.won .nm::after{ content:" ✓"; color:var(--gold); font-weight:700; }
+.bracket-game .side .nm{ min-width:0; }
 .bracket-game .side .sc{ font-weight:700; font-variant-numeric:tabular-nums; }
 .bracket-game .note{ font-size:.72rem; color:var(--muted); margin-top:3px; }
 </style>
@@ -513,7 +514,7 @@ function renderHomeBracket(){
     const games = cur.games.filter(g => !g.bye);
     const done = games.filter(g => g.winner).length;
     el.innerHTML = `<div class="kicker">NCAA DIII Championship · ${esc(cur.name)}</div>
-      <h3>The bracket is out</h3>
+      <h3>${b.rounds[0].games.reduce((n,g)=>n+(g.bye?1:2),0)}-team field is set</h3>
       <p>${done} of ${games.length} ${esc(cur.name.toLowerCase())} games final${b.updated ? " · updated " + esc(b.updated) : ""}.</p>
       <span class="cta">See the bracket →</span>`;
   } else {
@@ -894,12 +895,43 @@ function currentRound(b){
 }
 let activeRound = null;
 
-function bracketSide(name, score, pk, state){
+// Later rounds name a slot by its feeder game ("Williams / John Jay"); once that
+// game has a winner, show the winner instead. Returns {name, rec} or {slot: [names]}.
+function resolveSlot(name, b){
+  if (!name.includes(" / ")) return {name, rec: teamRecord(name, b)};
+  const parts = name.split(" / ").map(x => x.trim());
+  for (const r of b.rounds) for (const g of r.games) {
+    const pair = [g.a, g.b];
+    if (g.winner && parts.every(p => pair.includes(p))) {
+      const w = g.winner === "a" ? g.a : g.b;
+      return {name: w, rec: teamRecord(w, b)};
+    }
+  }
+  return {slot: parts};
+}
+function teamRecord(name, b){
+  for (const r of b.rounds) for (const g of r.games) {
+    if (g.a === name && g.a_rec) return g.a_rec;
+    if (g.b === name && g.b_rec) return g.b_rec;
+  }
+  return "";
+}
+
+function teamLabel(name, rec){
   const target = linkName(name);
   const conf = conferenceOf(target);
   const npi = npiRankOf(target);
+  return `<span${conf ? ` style="cursor:pointer" onclick="openTeam(${jsArg(target)})"` : ""}>${esc(name)}</span>` +
+    (rec ? ` <span style="font-weight:500;color:var(--muted);font-size:.74rem;">${esc(rec)}</span>` : "") +
+    (npi ? ` <span class="move-chip" style="background:var(--turf);color:var(--muted);">NPI ${esc(npi)}</span>` : "");
+}
+
+function bracketSide(slot, score, pk, state){
+  const label = slot.slot
+    ? `<span style="font-weight:500;color:var(--muted);">${slot.slot.map(n => teamLabel(n, "")).join(" / ")}</span>`
+    : teamLabel(slot.name, slot.rec);
   return `<div class="side ${state}">
-    <span class="nm"${conf ? ` style="cursor:pointer" onclick="openTeam(${jsArg(target)})"` : ""}>${esc(name)}${npi ? ` <span class="move-chip" style="background:var(--turf);color:var(--muted);">NPI ${esc(npi)}</span>` : ""}</span>
+    <span class="nm">${label}</span>
     <span class="sc">${esc(score)}${pk ? ` <span style="font-weight:500;color:var(--muted);font-size:.75rem;">(${esc(pk)} PK)</span>` : ""}</span>
   </div>`;
 }
@@ -925,7 +957,8 @@ function renderBracket(){
       <div class="card teaser-row" style="margin-top:8px;" onclick="go('rankings')"><span style="font-weight:600;font-size:.86rem;">Full NPI list</span><span class="go">→</span></div>` : ""}`;
     return;
   }
-  meta.innerHTML = `<span>Division III men's soccer</span>${b.updated ? `<span class="sep">·</span><span>Updated ${esc(b.updated)}</span>` : ""}`;
+  meta.innerHTML = `<span>Division III men's soccer</span>${b.updated ? `<span class="sep">·</span><span>Updated ${esc(b.updated)}</span>` : ""}` +
+    (b.info ? `<div style="flex-basis:100%;margin-top:2px;">${esc(b.info)}</div>` : "");
   if (!activeRound || !b.rounds.some(r => r.name === activeRound)) activeRound = currentRound(b).name;
   seg.innerHTML = b.rounds.map(r => `<button data-round="${esc(r.name)}" class="${r.name===activeRound?'active':''}">${esc(r.name)}</button>`).join("");
   const round = b.rounds.find(r => r.name === activeRound);
@@ -946,8 +979,8 @@ function renderBracket(){
         const st = side => !g.winner ? "" : (g.winner === side ? "won" : "lost");
         const note = [g.bye ? "First-round bye" : "", suffix, g.note].filter(Boolean).join(" · ");
         return `<div class="bracket-game">
-          ${bracketSide(g.a, sa, pa, st("a"))}
-          ${g.bye ? "" : bracketSide(g.b || "TBD", sb, pb, st("b"))}
+          ${bracketSide(resolveSlot(g.a, b), sa, pa, st("a"))}
+          ${g.bye ? "" : bracketSide(g.b ? resolveSlot(g.b, b) : {name: "TBD", rec: ""}, sb, pb, st("b"))}
           ${note ? `<div class="note">${esc(note)}</div>` : ""}
         </div>`;
       }).join("")}
