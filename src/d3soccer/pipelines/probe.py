@@ -68,7 +68,10 @@ def describe(url: str, links: str | None = None, dump: list[str] | None = None) 
                 out.append(f"  data rows: {len(data['data'])}")
                 out += [f"    {json.dumps(r)[:240]}" for r in data["data"][:2]]
             else:  # e.g. a box score: show the start of the payload itself
-                out.append(f"  json: {json.dumps(data)[:6000]}")
+                text = json.dumps(data)
+                out.append(f"  json: {text[:3000]}")
+                if len(text) > 3000:
+                    out.append(f"  ...json end: {text[-3000:]}")
         else:
             out.append(f"  {type(data).__name__} of {len(data)}")
         return out
