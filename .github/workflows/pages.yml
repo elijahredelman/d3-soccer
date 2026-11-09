@@ -29,6 +29,9 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - run: uv sync --no-dev
       - run: uv run d3soccer build
+      # Today's scores and box scores, fresher than the last scrape; not fatal if the
+      # NCAA feed is down (the page falls back to the build's data).
+      - run: uv run d3soccer live || echo "live scores unavailable; deploying without"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -49,11 +49,16 @@ site matches finals and live games from the NCAA scoreboard to bracket games on 
 the file's `starts` date, and winners advance into the next round's slots. A score typed
 into the file always wins.
 
-While the site is open it re-polls the NCAA scoreboard feed every minute, so live scores
-move without a redeploy. Once a game starts, its score card opens a box score page in the
-site (`#game/<id>`): the national scrape saves each game's NCAA box score
-(`/game/<id>/boxscore`) and the build writes them to `web/boxscores/<id>.json`; for a live
-game the page also re-fetches the feed every minute. Play-by-play links out to ncaa.com. Team names can be the NCAA's short forms
+Once a game starts, its score card opens a box score page in the site (`#game/<id>`).
+The national scrape saves each game's NCAA box score (`/game/<id>/boxscore`) in the
+snapshots, and the build writes them to `web/boxscores/<id>.json`. Play-by-play links out
+to ncaa.com.
+
+**Live scores.** The NCAA feed doesn't allow browsers to read it (no CORS header), so the
+page can't poll it. Instead every deploy runs `d3soccer live`, which writes today's
+scoreboard and box scores into `web/live.json` and `web/boxscores/`; the **Live scores**
+workflow (`live.yml`) redeploys every 10 minutes during NCAA tournament game windows
+without committing anything; and an open page re-reads `live.json` every minute. Team names can be the NCAA's short forms
 ("CWRU", "Wash. & Lee"); they link to team pages automatically. Until the file has
 games, the site's **Bracket** tab shows the announcement date and the NPI top 25.
 

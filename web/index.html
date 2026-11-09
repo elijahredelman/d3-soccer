@@ -513,9 +513,10 @@ function statusMarkup(g){
 }
 function scoreOrDash(v){ return (v===undefined || v==="") ? "–" : v; }
 
-// Scores: baked in at deploy time, then polled from the same NCAA feed the scraper
-// uses while the page is open, so live games tick along without a redeploy.
-const LIVE_FEED = "https://ncaa-api.henrygd.me/scoreboard/soccer-men/d3";
+// Scores: baked in at build time, then live.json (rewritten by every deploy; the Live
+// scores workflow redeploys every 10 minutes during tournament games) is re-read every
+// minute while the page is open. The NCAA feed itself can't be read from a browser.
+let liveBoxIds = new Set();
 let scoreboard = REAL_SCOREBOARD;
 let scoreboardAt = REAL_META.nationalFetchedAt;
 let scoreboardLive = false;
@@ -544,15 +545,18 @@ function compactScoreboard(payload){
 }
 
 async function pollScores(){
-  if (document.hidden) return;
+  if (document.hidden || location.protocol === "file:") return;
   try {
-    const res = await fetch(LIVE_FEED, {cache: "no-store"});
+    const res = await fetch("live.json?t=" + Date.now(), {cache: "no-store"});
     if (!res.ok) return;
-    const rows = compactScoreboard(await res.json());
-    if (!rows.length) return;  // an empty board would hide yesterday's results
-    scoreboard = rows; scoreboardAt = new Date().toISOString(); scoreboardLive = true;
+    const live = await res.json();
+    liveBoxIds = new Set(live.boxscores || []);
+    const rows = live.scoreboard || [];
+    if (!rows.length || (scoreboardAt && live.fetchedAt && live.fetchedAt < scoreboardAt)) return;
+    scoreboard = rows; scoreboardAt = live.fetchedAt; scoreboardLive = true;
     renderLive(); renderHomeBracket(); renderBracket();
-  } catch (e) { /* offline or blocked: keep the baked-in scores */ }
+    if (openGameId) renderGame();
+  } catch (e) { /* offline: keep what's on the page */ }
 }
 
 function renderLive(){
@@ -1151,12 +1155,29 @@ function walk(v, fn){ fn(v); if (Array.isArray(v)) v.forEach(x => walk(x, fn)); 
 const playerName = p => p.name || p.playerName || p.fullName || [p.firstName, p.lastName].filter(Boolean).join(" ");
 const looksPlayer = o => isObj(o) && !!playerName(o) && Object.values(o).some(v => v !== null && typeof v !== "object");
 const STAT_LABELS = {goals:"G", assists:"A", points:"PTS", shots:"SH", shotsOnGoal:"SOG", shotsongoal:"SOG", saves:"SV",
-  goalsAgainst:"GA", minutesPlayed:"MIN", minutes:"MIN", fouls:"F", yellowCards:"YC", redCards:"RC", gamesStarted:"GS",
+  goalsAgainst:"GA", goalsAllowed:"GA", minutesPlayed:"MIN", minutes:"MIN", fouls:"F", yellowCards:"YC", redCards:"RC", gamesStarted:"GS",
   cornerKicks:"CK", corners:"CK", offsides:"OFF", gameWinningGoals:"GWG", penaltyKicks:"PK"};
-const SKIP_KEY = /(^id$|id$|^first|^last|name$|url|image|seo|color|^is|starter|participated|^position$|^pos$|number$|^jersey|^uniform)/i;
+const SKIP_KEY = /(^_|^id$|id$|^first|^last|name$|url|image|seo|color|^is|starter|participated|^position$|^pos$|number$|^jersey|^uniform)/i;
 const COMPARE_LABELS = {goals:"Goals", assists:"Assists", shots:"Shots", shotsOnGoal:"Shots on goal", saves:"Saves",
   cornerKicks:"Corners", corners:"Corners", fouls:"Fouls", yellowCards:"Yellow cards", redCards:"Red cards", offsides:"Offsides",
-  goalsAgainst:"Goals against", points:"Points"};
+  goalsAgainst:"Goals against", goalsAllowed:"Goals against", points:"Points"};
+// The soccer columns worth a phone's width, in this order, when the feed has them.
+const BOX_COLUMNS = ["minutesPlayed", "goals", "assists", "shots", "shotsOnGoal", "saves", "goalsAllowed", "fouls", "yellowCards", "redCards"];
+// "BEN BROWN" -> "Ben Brown"; names already in mixed case are left alone.
+const nameCase = n => n === n.toUpperCase() ? n.toLowerCase().replace(/(^|[\s'-])([a-z])/g, (m, a, b) => a + b.toUpperCase()) : n;
+// Player rows keep some stats in nested groups ({penalties: {fouls, yellowCards}}); lift them up.
+// The NCAA's team line repeats some stats at the top level as "0" and keeps the real
+// number nested (fouls under penalties, saves under goalie), so a nested non-zero wins.
+const blank = v => v === null || v === undefined || v === "" || v === "0" || v === 0;
+const flatPlayer = p => {
+  const out = {};
+  for (const [k, v] of Object.entries(p)) if (!isObj(v)) out[k] = v;
+  for (const v of Object.values(p)) if (isObj(v))
+    for (const [k2, v2] of Object.entries(v)) if (!isObj(v2) && (blank(out[k2]) && !blank(v2) || !(k2 in out))) out[k2] = v2;
+  return out;
+};
+// Team-stat rows, in this order, when the feed has them.
+const COMPARE_ORDER = ["goals", "assists", "shots", "shotsOnGoal", "saves", "corners", "cornerKicks", "fouls", "offsides", "yellowCards", "redCards"];
 const prettyKey = k => STAT_LABELS[k] || k.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, c => c.toUpperCase());
 
 function normalizeBox(raw){
@@ -1186,14 +1207,26 @@ function normalizeBox(raw){
     }
   });
   return teams.map(t => {
+    t.players = t.players.map(flatPlayer);
     const colKeys = [];
     const header = isObj(t.header) ? t.header : null;
     for (const p of t.players) for (const [k, v] of Object.entries(p))
       if (!SKIP_KEY.test(k) && v !== null && typeof v !== "object" && !colKeys.includes(k)) colKeys.push(k);
     if (header) colKeys.sort((x, y) => (Object.keys(header).indexOf(x) + 1 || 99) - (Object.keys(header).indexOf(y) + 1 || 99));
+    // Prefer the standard soccer columns; otherwise whatever the feed has.
+    const known = BOX_COLUMNS.filter(k => colKeys.includes(k));
+    if (known.length >= 3) colKeys.splice(0, colKeys.length, ...known);
     // Drop columns with nothing in them.
     const cols = colKeys.filter(k => /^(goals|assists)$/.test(k) || t.players.some(p => p[k] !== "" && p[k] != null && p[k] !== "-" && p[k] !== "0" && p[k] !== 0)).slice(0, 10);
-    const totals = isObj(t.totals) ? Object.entries(t.totals).filter(([k, v]) => !SKIP_KEY.test(k) && v !== null && typeof v !== "object") : [];
+    let totals = isObj(t.totals) ? Object.entries(flatPlayer(t.totals)).filter(([k, v]) => !SKIP_KEY.test(k) && v !== null && typeof v !== "object" && typeof v !== "boolean") : [];
+    if (totals.some(([k]) => COMPARE_ORDER.includes(k)))
+      totals = COMPARE_ORDER.map(k => totals.find(([k2]) => k2 === k)).filter(Boolean);
+    if (!totals.length) {
+      // No team line in the feed: add up the players' counting stats.
+      const sums = BOX_COLUMNS.filter(k => k !== "minutesPlayed" && k !== "goalsAllowed" && t.players.some(p => p[k] != null && p[k] !== ""))
+        .map(k => [k, String(t.players.reduce((n, p) => n + (parseFloat(p[k]) || 0), 0))]);
+      totals = sums;
+    }
     return {
       name: (names[t.tid] || {}).name || "", home: (names[t.tid] || {}).home,
       cols: cols.map(k => ({k, label: header && typeof header[k] === "string" ? header[k] : prettyKey(k)})),
@@ -1202,14 +1235,12 @@ function normalizeBox(raw){
   });
 }
 
-async function loadBox(id, live){
-  const feed = `${LIVE_FEED.replace(/\/scoreboard\/.*/, "")}/game/${encodeURIComponent(id)}/boxscore`;
-  const urls = live ? [feed] : [];
-  if (REAL_BOXSCORES[id] !== undefined) urls.push(`boxscores/${id}.json`);
-  if (!live) urls.push(feed);
-  for (const u of urls) {
-    try { const r = await fetch(u, {cache: "no-store"}); if (r.ok) return await r.json(); } catch (e) {}
-  }
+async function loadBox(id){
+  if (REAL_BOXSCORES[id] === undefined && !liveBoxIds.has(id)) return null;
+  try {
+    const r = await fetch(`boxscores/${id}.json?t=` + Date.now(), {cache: "no-store"});
+    if (r.ok) return await r.json();
+  } catch (e) {}
   return null;
 }
 
@@ -1241,14 +1272,14 @@ async function renderGame(){
   if (!id) return;
   const g = gameRow(id);
   renderGameHero(g, []);
-  const raw = await loadBox(id, g && g.status === "live");
+  const raw = await loadBox(id);
   if (id !== openGameId) return;  // navigated away while loading
   const body = document.getElementById("gameBody");
   const teams = raw ? normalizeBox(raw).filter(t => t.players.length) : [];
   if (!teams.length) {
     body.innerHTML = `<div class="card empty-hint" style="margin-top:12px;">${g && g.status === "pre"
       ? "The box score shows up here once the game starts."
-      : "Box score isn't available here yet. The ncaa.com link above has it."}</div>`;
+      : "Box score isn't in yet; it updates every few minutes during the game. The ncaa.com link above has it now."}</div>`;
     return;
   }
   // Away team first, like the score header; fall back to the feed's order.
@@ -1272,7 +1303,7 @@ async function renderGame(){
     html += `<div class="section-label">${esc(t.name || "Players")}</div>
       <div class="card"><div class="standings-scroll"><table class="box-table">
       <thead><tr><th>Player</th>${t.cols.map(c => `<th title="${esc(c.k)}">${esc(c.label)}</th>`).join("")}</tr></thead>
-      <tbody>${t.players.map(p => `<tr><td>${num(p) !== "" ? `<span style="color:var(--muted);font-weight:500;">${esc(num(p))}</span> ` : ""}${esc(playerName(p))}${pos(p) ? `<span class="pos">${esc(pos(p))}</span>` : ""}</td>${t.cols.map(c => `<td>${esc(p[c.k] ?? "")}</td>`).join("")}</tr>`).join("")}
+      <tbody>${t.players.map(p => `<tr><td>${num(p) !== "" ? `<span style="color:var(--muted);font-weight:500;">${esc(num(p))}</span> ` : ""}${esc(nameCase(playerName(p)))}${pos(p) ? `<span class="pos">${esc(pos(p))}</span>` : ""}</td>${t.cols.map(c => `<td>${esc(p[c.k] ?? "")}</td>`).join("")}</tr>`).join("")}
       ${t.totals.length ? `<tr class="total"><td>Totals</td>${t.cols.map(c => `<td>${esc((Object.fromEntries(t.totals))[c.k] ?? "")}</td>`).join("")}</tr>` : ""}
       </tbody></table></div></div>`;
   }
@@ -1287,11 +1318,6 @@ function openGame(id, fromRoute){
   window.scrollTo(0, 0);
   renderGame();
 }
-// Keep an open live game current.
-setInterval(() => {
-  const g = openGameId && gameRow(openGameId);
-  if (g && g.status === "live" && document.getElementById("panel-game").classList.contains("active")) renderGame();
-}, 60000);
 
 /* ---- tabs & links ---- */
 // URLs: #bracket, #rankings, #stats, #teams, #team/<name>, so any view can be shared.

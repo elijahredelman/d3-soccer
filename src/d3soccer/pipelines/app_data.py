@@ -427,6 +427,14 @@ def run():
             boxscores[gid] = bool(box.get("final"))
     with open(APP_DATA_JS, "a", encoding="utf-8") as f:
         f.write(_js("REAL_BOXSCORES", boxscores))
+    # Baseline for the page's live polling; `d3soccer live` overwrites it at deploy.
+    (WEB_DIR / "live.json").write_text(
+        json.dumps(
+            {"fetchedAt": national.get("fetched_at"), "scoreboard": scoreboard, "boxscores": []},
+            separators=(",", ":"),
+        ),
+        encoding="utf-8",
+    )
     print(f"{len(boxscores)} box scores")
     print(f"{len(rosters)} rosters, {len(schedules)} schedules, {len(stats)} team-stat sets")
     print(
