@@ -6,6 +6,9 @@ Pulls national data and writes `national_snapshot_<date>.json`:
   - NPI rankings
   - today's scoreboard
   - United Soccer Coaches D3 Top 25
+  - finals: every final seen on a scoreboard in the last FINALS_DAYS days, carried
+    forward between runs (the scoreboard itself only has today), so the tournament
+    bracket can fill in results
 
     uv run d3soccer scrape national
 
@@ -21,6 +24,19 @@ from d3soccer.pipelines import snapshots
 from d3soccer.scrapers import ncaa_national
 
 TITLE = "National"
+FINALS_DAYS = 45
+
+
+def merge_finals(previous: dict | None, scoreboard: dict | None, now: float) -> dict:
+    """Finals keyed by NCAA game id: the previous ones plus today's, minus old ones."""
+    from d3soccer.pipelines.app_data import compact_scoreboard
+
+    finals = dict(previous or {})
+    for row in compact_scoreboard(scoreboard):
+        if row["status"] == "final" and row["id"]:
+            finals[row["id"]] = row
+    cutoff = now - FINALS_DAYS * 86400
+    return {k: v for k, v in finals.items() if v.get("epoch", 0) >= cutoff}
 
 
 def previous_state() -> dict:
@@ -32,7 +48,8 @@ def previous_state() -> dict:
         state["usc_poll"] = legacy.get("usc_poll")
     for path in snapshots.latest_per_family(snapshots.NATIONAL_FAMILIES):
         for key, value in snapshots.load(path).items():
-            if isinstance(value, dict) and key in ("leaders", "team_leaders"):
+            if isinstance(value, dict) and key in ("leaders", "team_leaders", "finals"):
+                state.setdefault(key, {})
                 state[key].update(value)
             elif value:
                 state[key] = value
@@ -93,6 +110,9 @@ def run() -> dict:
         failures.append(f"scoreboard: {type(e).__name__}: {e}")
         print(f"  scoreboard failed ({e}); keeping previous data")
         out["scoreboard"] = prev.get("scoreboard")
+    out["finals"] = merge_finals(
+        prev.get("finals"), out["scoreboard"], datetime.now(UTC).timestamp()
+    )
     out["usc_poll"] = pull(
         "United Soccer Coaches poll",
         ncaa_national.fetch_united_soccer_coaches_poll,

@@ -308,6 +308,12 @@ a{ color:inherit; text-decoration:none; }
 .bracket-game .side.lost .nm, .bracket-game .side.lost .sc{ color:var(--muted); font-weight:500; }
 .bracket-game .side.won .nm::after{ content:" ✓"; color:var(--gold); font-weight:700; }
 .bracket-game .side .nm{ min-width:0; }
+a.live-card{ display:block; color:inherit; }
+a.live-card:hover{ border-color:var(--muted); }
+.live-card .stats{ font-size:.64rem; font-weight:700; color:var(--muted); margin-top:8px; letter-spacing:.02em; }
+.live-card .conf-tag.ncaa{ background:var(--gold); color:var(--gold-ink); }
+.bracket-game .note a{ color:var(--ink); font-weight:700; text-decoration:underline; text-underline-offset:2px; }
+.bracket-game .live{ color:var(--live); font-weight:700; }
 .bracket-game .side .sc{ font-weight:700; font-variant-numeric:tabular-nums; }
 .bracket-game .note{ font-size:.72rem; color:var(--muted); margin-top:3px; }
 </style>
@@ -474,39 +480,86 @@ const teamStats = REAL_STATS;
    ============================================================ */
 
 function statusMarkup(g){
-  if(g.status==="live") return `<span class="status is-live"><span class="dot"></span>${g.clock}</span>`;
+  if(g.status==="live") return `<span class="status is-live"><span class="dot"></span>${esc(g.clock || "LIVE")}</span>`;
   if(g.status==="final") return `<span class="status is-final">FINAL</span>`;
-  return `<span class="status is-pre">${g.time}</span>`;
+  return `<span class="status is-pre">${esc(g.time)}</span>`;
 }
 function scoreOrDash(v){ return (v===undefined || v==="") ? "–" : v; }
+
+// Scores: baked in at deploy time, then polled from the same NCAA feed the scraper
+// uses while the page is open, so live games tick along without a redeploy.
+const LIVE_FEED = "https://ncaa-api.henrygd.me/scoreboard/soccer-men/d3";
+let scoreboard = REAL_SCOREBOARD;
+let scoreboardAt = REAL_META.nationalFetchedAt;
+let scoreboardLive = false;
+const gameUrl = g => g.id ? "https://www.ncaa.com/game/" + encodeURIComponent(g.id) : "";
+const isoDate = mdy => (mdy || "").replace(/(\d+)\/(\d+)\/(\d+)/, "$3-$1-$2");
+
+// Same shape as compact_scoreboard() in app_data.py.
+function compactScoreboard(payload){
+  const order = {live: 0, pre: 1, final: 2};
+  return ((payload && payload.games) || []).map(item => {
+    const g = item.game || {}, home = g.home || {}, away = g.away || {};
+    const status = g.gameState || "pre";
+    const row = {
+      id: String(g.gameID || "").trim(), status,
+      home: (home.names || {}).short || "", away: (away.names || {}).short || "",
+      epoch: +g.startTimeEpoch || 0, date: g.startDate || "",
+    };
+    if (status !== "pre") { row.hs = home.score ?? ""; row.as = away.score ?? ""; }
+    else row.time = g.startTime || "TBA";
+    if (status === "live") row.clock = [g.currentPeriod, g.contestClock].filter(Boolean).join(" ");
+    if (status === "final" && (home.winner || away.winner)) row.win = home.winner ? "home" : "away";
+    const seo = ((home.conferences || [{}])[0] || {}).conferenceSeo;
+    if (seo) row.conf = seo.replace(/-/g, " ").toUpperCase();
+    return row;
+  }).sort((x, y) => (order[x.status] ?? 1) - (order[y.status] ?? 1) || x.epoch - y.epoch);
+}
+
+async function pollScores(){
+  if (document.hidden) return;
+  try {
+    const res = await fetch(LIVE_FEED, {cache: "no-store"});
+    if (!res.ok) return;
+    const rows = compactScoreboard(await res.json());
+    if (!rows.length) return;  // an empty board would hide yesterday's results
+    scoreboard = rows; scoreboardAt = new Date().toISOString(); scoreboardLive = true;
+    renderLive(); renderHomeBracket(); renderBracket();
+  } catch (e) { /* offline or blocked: keep the baked-in scores */ }
+}
 
 function renderLive(){
   // Scores are for the day the scoreboard was fetched; say so if that isn't today.
   const now = new Date();
   const today = [now.getMonth()+1, now.getDate(), now.getFullYear()].map(n=>String(n).padStart(2,"0")).join("/");
-  const day = REAL_SCOREBOARD.length ? REAL_SCOREBOARD[0].date : "";
-  const label = (!day || day === today) ? "Live & today" : "Scores · " + fmtDate(day.replace(/(\d+)\/(\d+)\/(\d+)/, "$3-$1-$2"));
-  const asOf = REAL_META.nationalFetchedAt ? " · updated " + fmtTime(REAL_META.nationalFetchedAt) : "";
+  const day = scoreboard.length ? scoreboard[0].date : "";
+  const label = (!day || day === today) ? "Live & today" : "Scores · " + fmtDate(isoDate(day));
+  const asOf = scoreboardAt ? " · updated " + fmtTime(scoreboardAt) : "";
   document.getElementById("liveStripLabel").textContent = label + asOf;
-  if (!REAL_SCOREBOARD.length) {
+  if (!scoreboard.length) {
     document.getElementById("liveStrip").innerHTML = `<div class="empty-hint">No D3 men's games on today's scoreboard.</div>`;
     return;
   }
-  document.getElementById("liveStrip").innerHTML = REAL_SCOREBOARD.map(g=>`
-    <div class="live-card">
-      <div class="status-row">
-        ${statusMarkup(g)}
-        ${g.conf ? `<span class="conf-tag">${g.conf}</span>` : ""}
-      </div>
+  document.getElementById("liveStrip").innerHTML = scoreboard.map(g=>{
+    const url = gameUrl(g);
+    const ncaa = isTournamentGame(g);
+    const tag = ncaa ? `<span class="conf-tag ncaa">NCAA</span>` : (g.conf ? `<span class="conf-tag">${esc(g.conf)}</span>` : "");
+    const link = {live: "Live stats ↗", final: "Box score ↗", pre: "Game preview ↗"}[g.status] || "Game page ↗";
+    const inner = `
+      <div class="status-row">${statusMarkup(g)}${tag}</div>
       <div class="matchup">
-        <div class="team-row"><span class="nm">${g.away}</span><span class="sc num">${scoreOrDash(g.as)}</span></div>
-        <div class="team-row"><span class="nm">${g.home}</span><span class="sc num">${scoreOrDash(g.hs)}</span></div>
+        <div class="team-row"><span class="nm">${esc(g.away)}</span><span class="sc num">${esc(scoreOrDash(g.as))}</span></div>
+        <div class="team-row"><span class="nm">${esc(g.home)}</span><span class="sc num">${esc(scoreOrDash(g.hs))}</span></div>
       </div>
-    </div>`).join("");
+      ${url ? `<div class="stats">${link}</div>` : ""}`;
+    return url
+      ? `<a class="live-card" href="${url}" target="_blank" rel="noopener">${inner}</a>`
+      : `<div class="live-card">${inner}</div>`;
+  }).join("");
 }
 
 function renderHomeBracket(){
-  const b = REAL_BRACKET;
+  const b = bracketState();
   const live = b && b.rounds.length;
   const el = document.getElementById("homeBracket");
   if (live) {
@@ -889,6 +942,65 @@ function renderStatList(){
 }
 
 /* ---- bracket ---- */
+const sameTeam = (x, y) => !!x && !!y && (x === y || linkName(x) === linkName(y));
+
+// Scoreboard games from the first tournament day on: saved finals plus today's board.
+function tournamentGames(){
+  const start = REAL_BRACKET && REAL_BRACKET.starts;
+  if (!start) return [];
+  const byId = new Map();
+  for (const g of [...REAL_FINALS, ...REAL_SCOREBOARD, ...scoreboard])
+    if (isoDate(g.date) >= start) byId.set(g.id || g.home + "|" + g.away + "|" + g.epoch, g);
+  return [...byId.values()];
+}
+function isTournamentGame(g){
+  const b = REAL_BRACKET;
+  if (!b || !b.starts || isoDate(g.date) < b.starts) return false;
+  return b.rounds.some(r => r.games.some(x => [x.a, x.b].join(" / ").split(" / ").some(n => sameTeam(n, g.home))));
+}
+
+// The bracket file plus results: any game without a typed-in score takes its score
+// (live or final) from the NCAA scoreboard, and winners advance into later rounds'
+// "A / B" slots.
+function bracketState(){
+  const b = REAL_BRACKET;
+  if (!b) return null;
+  const games = tournamentGames();
+  const winners = [];
+  const resolve = name => {
+    if (!name || !name.includes(" / ")) return name;
+    const parts = name.split(" / ").map(x => x.trim());
+    const hit = winners.find(([pair]) => parts.every(p => pair.some(q => sameTeam(p, q))));
+    return hit ? hit[1] : name;
+  };
+  const rounds = b.rounds.map(r => ({...r, games: r.games.map(g0 => {
+    const g = {...g0, a: resolve(g0.a), b: resolve(g0.b)};
+    const known = !g.bye && !g.a.includes(" / ") && g.b && !g.b.includes(" / ");
+    if (known) {
+      const m = games
+        .filter(s => (sameTeam(s.home, g.a) && sameTeam(s.away, g.b)) || (sameTeam(s.home, g.b) && sameTeam(s.away, g.a)))
+        .sort((x, y) => y.epoch - x.epoch)[0];
+      if (m) {
+        g.id = m.id; g.status = m.status;
+        if (m.status === "live") g.clock = m.clock;
+        if (!g.score && m.status !== "pre") {
+          const aHome = sameTeam(m.home, g.a);
+          const sa = aHome ? m.hs : m.as, sb = aHome ? m.as : m.hs;
+          g.score = `${sa}-${sb}`;
+          if (m.status === "final") {
+            if (m.win) g.winner = (m.win === "home") === aHome ? "a" : "b";
+            else if (+sa !== +sb) g.winner = +sa > +sb ? "a" : "b";
+            if (+sa === +sb && g.winner) g.score += " PKs";
+          }
+        }
+      }
+    }
+    if (g.winner) winners.push([[g.a, g.b], g.winner === "a" ? g.a : g.b]);
+    return g;
+  })}));
+  return {...b, rounds};
+}
+
 // The round to show first: the earliest one with an unplayed game, else the last.
 function currentRound(b){
   return b.rounds.find(r => r.games.some(g => !g.winner)) || b.rounds[b.rounds.length - 1];
@@ -937,7 +1049,7 @@ function bracketSide(slot, score, pk, state){
 }
 
 function renderBracket(){
-  const b = REAL_BRACKET;
+  const b = bracketState();
   const meta = document.getElementById("bracketMeta");
   const seg = document.getElementById("bracketRoundSeg");
   const body = document.getElementById("bracketBody");
@@ -977,11 +1089,15 @@ function renderBracket(){
         const suffix = g.score && g.score.includes(" ") ? g.score.split(" ").slice(1).join(" ") : "";
         const [pa, pb] = g.pk ? g.pk.split("-") : ["", ""];
         const st = side => !g.winner ? "" : (g.winner === side ? "won" : "lost");
-        const note = [g.bye ? "First-round bye" : "", suffix, g.note].filter(Boolean).join(" · ");
+        const url = gameUrl(g);
+        const live = g.status === "live" ? `<span class="live">● LIVE${g.clock ? " " + esc(g.clock) : ""}</span>` : "";
+        const link = url ? `<a href="${url}" target="_blank" rel="noopener">${g.status === "live" ? "Live stats" : g.winner ? "Box score" : "Game page"} ↗</a>` : "";
+        const note = [live, ...[g.bye ? "First-round bye" : "", suffix, g.status === "live" ? "" : g.note].filter(Boolean).map(esc), link]
+          .filter(Boolean).join(" · ");
         return `<div class="bracket-game">
           ${bracketSide(resolveSlot(g.a, b), sa, pa, st("a"))}
           ${g.bye ? "" : bracketSide(g.b ? resolveSlot(g.b, b) : {name: "TBD", rec: ""}, sb, pb, st("b"))}
-          ${note ? `<div class="note">${esc(note)}</div>` : ""}
+          ${note ? `<div class="note">${note}</div>` : ""}
         </div>`;
       }).join("")}
     </div>`).join("");
@@ -1092,4 +1208,7 @@ renderStatSeg();
 renderStatList();
 renderBracket();
 route();
+pollScores();
+setInterval(pollScores, 60000);
+document.addEventListener("visibilitychange", pollScores);
 </script>

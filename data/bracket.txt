@@ -5,7 +5,8 @@
 # When the bracket comes out (ncaa.com/championships/soccer-men/d3):
 # 1. Add a "## <round>" line, then one line per game: team | team | score | note
 #    - "### <group>" lines (a host site or pod) are optional, under a round
-#    - leave score empty until it's played: Williams | Amherst | | Sat. 11 a.m.
+#    - leave score empty: results fill in by themselves from the NCAA scoreboard
+#      (games on or after the "starts" date); a score typed here always wins
 #    - score is first team first; ties add PKs: Tufts | Bowdoin | 1-1 (4-3 PK) |
 #    - a first-round bye: Hamilton | Bye
 #    - team names can be short ("CWRU", "Wash. & Lee"), like the NPI table
@@ -19,6 +20,7 @@
 #
 # announced: Monday, Nov. 9
 # as of: Nov. 9
+# starts: 2026-11-13
 # info: Sectionals Nov. 21–22 · Semifinals Dec. 3 and final Dec. 5 in Columbus, Ohio · times ET
 
 ## First round
