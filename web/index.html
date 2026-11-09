@@ -314,6 +314,26 @@ a.live-card:hover{ border-color:var(--muted); }
 .live-card .conf-tag.ncaa{ background:var(--gold); color:var(--gold-ink); }
 .bracket-game .note a{ color:var(--ink); font-weight:700; text-decoration:underline; text-underline-offset:2px; }
 .bracket-game .live{ color:var(--live); font-weight:700; }
+.game-hero{ background: linear-gradient(155deg, var(--pitch), var(--pitch-2)); color:#f4f1e8;
+  border-radius:var(--radius); padding:16px 18px; box-shadow:var(--shadow); }
+.game-hero .row{ display:flex; justify-content:space-between; align-items:center; font-size:1.05rem; font-weight:600; padding:3px 0; }
+.game-hero .row .sc{ font-family:'Fraunces',serif; font-size:1.6rem; font-weight:600; font-variant-numeric:tabular-nums; }
+.game-hero .row.lost{ opacity:.6; }
+.game-hero .status{ font-size:.66rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#e7c877; margin-bottom:6px; }
+.game-hero .status.live{ color:#ff9b8a; }
+.game-hero a{ display:inline-block; margin-top:10px; font-size:.76rem; font-weight:700; color:#e7c877; }
+.box-table{ width:100%; border-collapse:collapse; font-size:.8rem; }
+.box-table th{ font-size:.6rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--muted);
+  padding:8px 6px; border-bottom:1px solid var(--line); text-align:right; white-space:nowrap; }
+.box-table td{ padding:8px 6px; border-bottom:1px solid var(--line); text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+.box-table tr:last-child td{ border-bottom:none; }
+.box-table th:first-child, .box-table td:first-child{ text-align:left; padding-left:12px; }
+.box-table td:first-child{ font-weight:600; }
+.box-table td .pos{ font-size:.6rem; font-weight:700; color:var(--muted); margin-left:4px; }
+.box-table tr.total td{ font-weight:700; background:var(--turf); }
+.box-table.compare td:nth-child(2){ text-align:center; color:var(--muted); font-size:.72rem; }
+.box-table.compare td:first-child, .box-table.compare td:last-child{ font-weight:700; }
+.box-table.compare td:first-child{ text-align:left; } .box-table.compare td:last-child{ text-align:right; padding-right:12px; }
 .bracket-game .side .sc{ font-weight:700; font-variant-numeric:tabular-nums; }
 .bracket-game .note{ font-size:.72rem; color:var(--muted); margin-top:3px; }
 </style>
@@ -397,6 +417,13 @@ a.live-card:hover{ border-color:var(--muted); }
     <div class="section-label" id="rankLabel">United Soccer Coaches D3 Top 25</div>
     <div class="card" id="rankList"></div>
     <div class="sample-note" id="rankNote"></div>
+  </div>
+
+  <!-- ============ GAME (box score) ============ -->
+  <div class="tab-panel" id="panel-game">
+    <button class="back-btn" onclick="history.length > 1 ? history.back() : go('home')">← Back</button>
+    <div id="gameHero"></div>
+    <div id="gameBody"></div>
   </div>
 
   <!-- ============ BRACKET ============ -->
@@ -544,7 +571,8 @@ function renderLive(){
     const url = gameUrl(g);
     const ncaa = isTournamentGame(g);
     const tag = ncaa ? `<span class="conf-tag ncaa">NCAA</span>` : (g.conf ? `<span class="conf-tag">${esc(g.conf)}</span>` : "");
-    const link = {live: "Live stats ↗", final: "Box score ↗", pre: "Game preview ↗"}[g.status] || "Game page ↗";
+    const inSite = g.status !== "pre" && g.id;
+    const link = {live: "Live box score →", final: "Box score →", pre: "Game preview ↗"}[g.status] || "Game page ↗";
     const inner = `
       <div class="status-row">${statusMarkup(g)}${tag}</div>
       <div class="matchup">
@@ -552,6 +580,7 @@ function renderLive(){
         <div class="team-row"><span class="nm">${esc(g.home)}</span><span class="sc num">${esc(scoreOrDash(g.hs))}</span></div>
       </div>
       ${url ? `<div class="stats">${link}</div>` : ""}`;
+    if (inSite) return `<a class="live-card" href="#game/${encodeURIComponent(g.id)}">${inner}</a>`;
     return url
       ? `<a class="live-card" href="${url}" target="_blank" rel="noopener">${inner}</a>`
       : `<div class="live-card">${inner}</div>`;
@@ -1091,7 +1120,9 @@ function renderBracket(){
         const st = side => !g.winner ? "" : (g.winner === side ? "won" : "lost");
         const url = gameUrl(g);
         const live = g.status === "live" ? `<span class="live">● LIVE${g.clock ? " " + esc(g.clock) : ""}</span>` : "";
-        const link = url ? `<a href="${url}" target="_blank" rel="noopener">${g.status === "live" ? "Live stats" : g.winner ? "Box score" : "Game page"} ↗</a>` : "";
+        const link = !url ? "" : g.status === "live" || g.status === "final"
+          ? `<a href="#game/${encodeURIComponent(g.id)}">${g.status === "live" ? "Live box score" : "Box score"} →</a>`
+          : `<a href="${url}" target="_blank" rel="noopener">Game page ↗</a>`;
         const note = [live, ...[g.bye ? "First-round bye" : "", suffix, g.status === "live" ? "" : g.note].filter(Boolean).map(esc), link]
           .filter(Boolean).join(" · ");
         return `<div class="bracket-game">
@@ -1109,15 +1140,169 @@ document.getElementById("bracketRoundSeg").addEventListener("click", e=>{
   renderBracket();
 });
 
+/* ---- game page: box score ---- */
+// Box scores come from the NCAA feed (ncaa-api /game/<id>/boxscore). The scraper saves
+// them as boxscores/<id>.json next to the page; for a live game the page also tries the
+// feed itself for the latest numbers. The JSON is read loosely: team names from any
+// object with an id and a short name, players from any array of named stat rows.
+let openGameId = null;
+const isObj = v => v && typeof v === "object" && !Array.isArray(v);
+function walk(v, fn){ fn(v); if (Array.isArray(v)) v.forEach(x => walk(x, fn)); else if (isObj(v)) Object.values(v).forEach(x => walk(x, fn)); }
+const playerName = p => p.name || p.playerName || p.fullName || [p.firstName, p.lastName].filter(Boolean).join(" ");
+const looksPlayer = o => isObj(o) && !!playerName(o) && Object.values(o).some(v => v !== null && typeof v !== "object");
+const STAT_LABELS = {goals:"G", assists:"A", points:"PTS", shots:"SH", shotsOnGoal:"SOG", shotsongoal:"SOG", saves:"SV",
+  goalsAgainst:"GA", minutesPlayed:"MIN", minutes:"MIN", fouls:"F", yellowCards:"YC", redCards:"RC", gamesStarted:"GS",
+  cornerKicks:"CK", corners:"CK", offsides:"OFF", gameWinningGoals:"GWG", penaltyKicks:"PK"};
+const SKIP_KEY = /(^id$|id$|^first|^last|name$|url|image|seo|color|^is|starter|participated|^position$|^pos$|number$|^jersey|^uniform)/i;
+const COMPARE_LABELS = {goals:"Goals", assists:"Assists", shots:"Shots", shotsOnGoal:"Shots on goal", saves:"Saves",
+  cornerKicks:"Corners", corners:"Corners", fouls:"Fouls", yellowCards:"Yellow cards", redCards:"Red cards", offsides:"Offsides",
+  goalsAgainst:"Goals against", points:"Points"};
+const prettyKey = k => STAT_LABELS[k] || k.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, c => c.toUpperCase());
+
+function normalizeBox(raw){
+  const names = {};
+  walk(raw, o => {
+    if (!isObj(o) || o.firstName || o.lastName) return;
+    const id = o.teamId ?? o.id;
+    const nm = o.shortName || o.nameShort || (o.names && o.names.short) || o.short || o.nameShortDisplay;
+    if (id != null && typeof nm === "string")
+      names[String(id)] = {name: nm, home: o.homeTeam === true || o.homeTeam === "true" || o.isHome === true || o.isHome === "true"};
+  });
+  const teams = [];
+  walk(raw, o => {
+    if (!isObj(o)) return;
+    for (const v of Object.values(o)) {
+      if (!Array.isArray(v)) continue;
+      const players = v.filter(looksPlayer);
+      if (!players.length) continue;
+      const tid = o.teamId ?? (looksPlayer(o) ? null : o.id);
+      const team = tid != null || !teams.length
+        ? {tid: tid != null ? String(tid) : "", header: o.playerHeader || o.header || null, players: [],
+           totals: o.playerTotals || o.teamStats || o.totals || null}
+        : teams[teams.length - 1];  // a stat group inside the team above
+      if (team !== teams[teams.length - 1]) teams.push(team);
+      team.players.push(...players);
+      if (!team.totals) team.totals = o.playerTotals || o.teamStats || o.totals || null;
+    }
+  });
+  return teams.map(t => {
+    const colKeys = [];
+    const header = isObj(t.header) ? t.header : null;
+    for (const p of t.players) for (const [k, v] of Object.entries(p))
+      if (!SKIP_KEY.test(k) && v !== null && typeof v !== "object" && !colKeys.includes(k)) colKeys.push(k);
+    if (header) colKeys.sort((x, y) => (Object.keys(header).indexOf(x) + 1 || 99) - (Object.keys(header).indexOf(y) + 1 || 99));
+    // Drop columns with nothing in them.
+    const cols = colKeys.filter(k => /^(goals|assists)$/.test(k) || t.players.some(p => p[k] !== "" && p[k] != null && p[k] !== "-" && p[k] !== "0" && p[k] !== 0)).slice(0, 10);
+    const totals = isObj(t.totals) ? Object.entries(t.totals).filter(([k, v]) => !SKIP_KEY.test(k) && v !== null && typeof v !== "object") : [];
+    return {
+      name: (names[t.tid] || {}).name || "", home: (names[t.tid] || {}).home,
+      cols: cols.map(k => ({k, label: header && typeof header[k] === "string" ? header[k] : prettyKey(k)})),
+      players: t.players, totals,
+    };
+  });
+}
+
+async function loadBox(id, live){
+  const feed = `${LIVE_FEED.replace(/\/scoreboard\/.*/, "")}/game/${encodeURIComponent(id)}/boxscore`;
+  const urls = live ? [feed] : [];
+  if (REAL_BOXSCORES[id] !== undefined) urls.push(`boxscores/${id}.json`);
+  if (!live) urls.push(feed);
+  for (const u of urls) {
+    try { const r = await fetch(u, {cache: "no-store"}); if (r.ok) return await r.json(); } catch (e) {}
+  }
+  return null;
+}
+
+function gameRow(id){
+  return [...scoreboard, ...REAL_SCOREBOARD, ...REAL_FINALS].find(g => g.id === id) || null;
+}
+
+function renderGameHero(g, teams){
+  const ncaa = `https://www.ncaa.com/game/${encodeURIComponent(openGameId)}`;
+  if (!g) {
+    document.getElementById("gameHero").innerHTML = `<div class="game-hero"><div class="status">Game ${esc(openGameId)}</div>
+      ${teams.map(t => `<div class="row"><span>${esc(t.name)}</span></div>`).join("")}
+      <a href="${ncaa}" target="_blank" rel="noopener">Full game page on ncaa.com ↗</a></div>`;
+    return;
+  }
+  const status = g.status === "live" ? `<div class="status live">● Live · ${esc(g.clock || "")}</div>`
+    : g.status === "final" ? `<div class="status">Final · ${esc(fmtDate(isoDate(g.date)))}</div>`
+    : `<div class="status">${esc(fmtDate(isoDate(g.date)))} · ${esc(g.time || "")}</div>`;
+  const lost = side => g.status === "final" && g.win && g.win !== side ? "lost" : "";
+  document.title = `${g.away} vs. ${g.home} · Pitch Sheet`;
+  document.getElementById("gameHero").innerHTML = `<div class="game-hero">${status}
+    <div class="row ${lost("away")}"><span>${esc(g.away)}</span><span class="sc">${esc(scoreOrDash(g.as))}</span></div>
+    <div class="row ${lost("home")}"><span>${esc(g.home)}</span><span class="sc">${esc(scoreOrDash(g.hs))}</span></div>
+    <a href="${ncaa}" target="_blank" rel="noopener">Play-by-play &amp; full stats on ncaa.com ↗</a></div>`;
+}
+
+async function renderGame(){
+  const id = openGameId;
+  if (!id) return;
+  const g = gameRow(id);
+  renderGameHero(g, []);
+  const raw = await loadBox(id, g && g.status === "live");
+  if (id !== openGameId) return;  // navigated away while loading
+  const body = document.getElementById("gameBody");
+  const teams = raw ? normalizeBox(raw).filter(t => t.players.length) : [];
+  if (!teams.length) {
+    body.innerHTML = `<div class="card empty-hint" style="margin-top:12px;">${g && g.status === "pre"
+      ? "The box score shows up here once the game starts."
+      : "Box score isn't available here yet. The ncaa.com link above has it."}</div>`;
+    return;
+  }
+  // Away team first, like the score header; fall back to the feed's order.
+  if (teams.length === 2 && teams[0].home === true && teams[1].home !== true) teams.reverse();
+  if (g && teams.length === 2) {
+    teams.forEach((t, i) => { if (!t.name) t.name = i === 0 ? g.away : g.home; });
+  }
+  if (!g) renderGameHero(null, teams);
+  let html = "";
+  const [a, b] = teams;
+  if (teams.length === 2 && a.totals.length && b.totals.length) {
+    const bMap = Object.fromEntries(b.totals);
+    const rows = a.totals.filter(([k]) => k in bMap && !/^minutes/i.test(k)).slice(0, 12);
+    html += `<div class="section-label">Team stats</div><div class="card"><table class="box-table compare">
+      <thead><tr><th>${esc(a.name)}</th><th></th><th style="text-align:right;padding-right:12px;">${esc(b.name)}</th></tr></thead>
+      <tbody>${rows.map(([k, v]) => `<tr><td>${esc(v)}</td><td>${esc(COMPARE_LABELS[k] || prettyKey(k))}</td><td>${esc(bMap[k])}</td></tr>`).join("")}</tbody></table></div>`;
+  }
+  for (const t of teams) {
+    const num = p => p.number ?? p.jerseyNumber ?? p.uniform ?? p.jersey ?? "";
+    const pos = p => p.position ?? p.pos ?? "";
+    html += `<div class="section-label">${esc(t.name || "Players")}</div>
+      <div class="card"><div class="standings-scroll"><table class="box-table">
+      <thead><tr><th>Player</th>${t.cols.map(c => `<th title="${esc(c.k)}">${esc(c.label)}</th>`).join("")}</tr></thead>
+      <tbody>${t.players.map(p => `<tr><td>${num(p) !== "" ? `<span style="color:var(--muted);font-weight:500;">${esc(num(p))}</span> ` : ""}${esc(playerName(p))}${pos(p) ? `<span class="pos">${esc(pos(p))}</span>` : ""}</td>${t.cols.map(c => `<td>${esc(p[c.k] ?? "")}</td>`).join("")}</tr>`).join("")}
+      ${t.totals.length ? `<tr class="total"><td>Totals</td>${t.cols.map(c => `<td>${esc((Object.fromEntries(t.totals))[c.k] ?? "")}</td>`).join("")}</tr>` : ""}
+      </tbody></table></div></div>`;
+  }
+  body.innerHTML = html;
+}
+
+function openGame(id, fromRoute){
+  if (!fromRoute) history.pushState(null, "", "#game/" + encodeURIComponent(id));
+  openGameId = id;
+  document.getElementById("gameBody").innerHTML = `<div class="card empty-hint" style="margin-top:12px;">Loading box score…</div>`;
+  showTab("game");
+  window.scrollTo(0, 0);
+  renderGame();
+}
+// Keep an open live game current.
+setInterval(() => {
+  const g = openGameId && gameRow(openGameId);
+  if (g && g.status === "live" && document.getElementById("panel-game").classList.contains("active")) renderGame();
+}, 60000);
+
 /* ---- tabs & links ---- */
 // URLs: #bracket, #rankings, #stats, #teams, #team/<name>, so any view can be shared.
 const TABS = ["home", "teams", "bracket", "rankings", "stats"];
 function showTab(name){
   document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("active"));
   document.getElementById("panel-"+name).classList.add("active");
-  const tab = name === "team" ? "teams" : name;
+  if (name !== "game") openGameId = null;
+  const tab = name === "team" ? "teams" : name === "game" ? "" : name;
   document.querySelectorAll(".tabbar button").forEach(b=>b.classList.toggle("active", b.dataset.tab===tab));
-  if (name !== "team") document.title = "Pitch Sheet" + (name === "home" ? " · D3 Men's Soccer" : " · " + document.querySelector(`.tabbar button[data-tab=${name}]`).textContent.trim());
+  if (name !== "team" && name !== "game") document.title = "Pitch Sheet" + (name === "home" ? " · D3 Men's Soccer" : " · " + document.querySelector(`.tabbar button[data-tab=${name}]`).textContent.trim());
 }
 function go(tab){
   history.pushState(null, "", tab === "home" ? location.pathname + location.search : "#" + tab);
@@ -1127,6 +1312,7 @@ function go(tab){
 function route(){
   const h = decodeURIComponent(location.hash.slice(1));
   if (h.startsWith("team/") && findTeam(h.slice(5))) openTeam(h.slice(5), true);
+  else if (/^game\/\d+$/.test(h)) openGame(h.slice(5), true);
   else showTab(TABS.includes(h) ? h : "home");
 }
 window.addEventListener("popstate", route);

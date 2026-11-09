@@ -87,6 +87,18 @@ TEAM_STAT_CATEGORIES = {
 }
 
 
+def fetch_boxscore(game_id: str) -> dict:
+    """
+    One game's box score (players and team totals), by the gameID the scoreboard
+    gives. ncaa-api also serves /game/<id>/play-by-play and /team-stats. The JSON
+    shape is passed through untouched; the site's renderer reads it loosely.
+    """
+    url = f"{NCAA_API_BASE}/game/{game_id}/boxscore"
+    resp = requests.get(url, headers=HEADERS, timeout=TIMEOUT)
+    resp.raise_for_status()
+    return resp.json()
+
+
 # ncaa-api mirrors ncaa.com URL paths. ncaa.com/rankings/soccer-men/d3 redirects to
 # "regional-rankings", whose table is RANK | SCHOOL | IN-DIVISION RECORD | NPI (81 rows,
 # confirmed by the Probe sites workflow on 2026-10-22). "national-rankings-npi" stayed

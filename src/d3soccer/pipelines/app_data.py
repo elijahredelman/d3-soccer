@@ -19,6 +19,8 @@ site reads directly:
   REAL_BRACKET      hand-kept NCAA tournament bracket (data/bracket.txt), or null
   REAL_TEAM_LINKS   national-feed team name -> registry team name, so NPI, poll and
                     bracket rows link to that team's page
+  REAL_BOXSCORES    {game id: final?} for the box scores written next to the site as
+                    web/boxscores/<id>.json (fetched only when a game is opened)
   REAL_META         {conferencesDate, nationalFetchedAt, nationalDate, built}
 
     uv run d3soccer build
@@ -29,7 +31,7 @@ import re
 from datetime import UTC, datetime
 
 from d3soccer import teamnames
-from d3soccer.config import APP_DATA_JS
+from d3soccer.config import APP_DATA_JS, WEB_DIR
 from d3soccer.pipelines import bracket, npi_paste, snapshots
 
 DISPLAY_ORDER = [
@@ -411,6 +413,21 @@ def run():
         f.write(_js("REAL_TEAM_LINKS", {k: v for k, v in links.items() if k != v}))
         f.write(_js("REAL_META", meta))
 
+    box_dir = WEB_DIR / "boxscores"
+    if box_dir.exists():
+        for old in box_dir.glob("*.json"):
+            old.unlink()
+    box_dir.mkdir(parents=True, exist_ok=True)
+    boxscores = {}
+    for gid, box in (national.get("boxscores") or {}).items():
+        if re.fullmatch(r"\d+", gid) and box.get("data"):
+            (box_dir / f"{gid}.json").write_text(
+                json.dumps(box["data"], separators=(",", ":"), ensure_ascii=False), encoding="utf-8"
+            )
+            boxscores[gid] = bool(box.get("final"))
+    with open(APP_DATA_JS, "a", encoding="utf-8") as f:
+        f.write(_js("REAL_BOXSCORES", boxscores))
+    print(f"{len(boxscores)} box scores")
     print(f"{len(rosters)} rosters, {len(schedules)} schedules, {len(stats)} team-stat sets")
     print(
         f"{len(standings)} conferences with standings, "
