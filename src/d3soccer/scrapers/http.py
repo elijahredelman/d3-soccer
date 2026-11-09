@@ -44,6 +44,6 @@ def get(url: str, *, headers: dict | None = None, timeout: float = TIMEOUT):
     raise AssertionError("unreachable")
 
 
-def get_raw(url: str, *, timeout: float = TIMEOUT):
+def get_raw(url: str, *, timeout: float = TIMEOUT, headers: dict | None = None):
     """One Chrome-like GET with no retries or status check (for the probe)."""
-    return _session.get(url, headers=HEADERS, timeout=timeout)
+    return _session.get(url, headers={**HEADERS, **(headers or {})}, timeout=timeout)

@@ -38,7 +38,9 @@ INTERESTING_CLASS = re.compile(r"roster|schedule|standing|stats|player|game", re
 def describe(url: str, links: str | None = None, dump: list[str] | None = None) -> list[str]:
     try:
         # Same Chrome-like client the scrapers use, so the probe sees what they see.
-        resp = http.get_raw(url, timeout=20)
+        # The Origin header makes servers that answer CORS per request say so.
+        origin = {"Origin": "https://elijahredelman.github.io"}
+        resp = http.get_raw(url, timeout=20, headers=origin)
     except http.RequestException as e:
         return [f"  ERROR {type(e).__name__}: {e}"]
     out = [
