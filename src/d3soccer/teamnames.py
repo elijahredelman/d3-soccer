@@ -137,6 +137,7 @@ NATIONAL_ALIASES = {
     "thomas (me)": "Thomas College",
     "st. thomas (tx)": "University of St. Thomas (Houston)",
     "rochester (ny)": "Rochester",
+    "st. joseph's (me)": "Saint Joseph's College of Maine",
 }
 
 # A trailing state tag the registry name doesn't carry: "Southwestern (TX)".
@@ -149,6 +150,8 @@ _NATIONAL_EXPANSIONS = [
     (re.compile(r"\bIll\. "), "Illinois "),
     (re.compile(r"\bChris\. "), "Christopher "),
     (re.compile(r"\bWash\. "), "Washington "),
+    (re.compile(r"\bSt\.-"), "State "),  # "Penn St.-Behrend"
+    (re.compile(r"\bVa\.$"), "Virginia"),  # "Southern Va."
 ]
 
 

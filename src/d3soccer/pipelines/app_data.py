@@ -347,7 +347,9 @@ def run():
     if npi and npi.get("data"):
         national_names += [r.get(_team_key(r), "") for r in npi["data"]]
     for rnd in (tournament or {}).get("rounds", []):
-        national_names += [n for g in rnd["games"] for n in (g["a"], g["b"]) if n]
+        for g in rnd["games"]:
+            # Later rounds name a slot by its feeder game: "Williams / John Jay".
+            national_names += [t for n in (g["a"], g["b"]) for t in n.split(" / ") if t]
     links = teamnames.match_national([n for n in national_names if n], list(teams))
 
     meta = {

@@ -1,10 +1,21 @@
 from d3soccer.pipelines import bracket
 
 
-def test_template_has_no_games_but_keeps_announcement():
+def test_committed_bracket_parses():
     out = bracket.load()
-    assert out["rounds"] == []
     assert out["announced"]
+    for rnd in out["rounds"]:
+        assert all(g["a"] for g in rnd["games"])
+
+
+def test_records_after_names_and_info_line():
+    out = bracket.parse(
+        "# info: Final Dec. 5\n## First round\nSt. Joseph's (ME) (9-2-8) | Williams (11-2-3) | |\n"
+    )
+    assert out["info"] == "Final Dec. 5"
+    game = out["rounds"][0]["games"][0]
+    assert (game["a"], game["a_rec"]) == ("St. Joseph's (ME)", "9-2-8")
+    assert (game["b"], game["b_rec"]) == ("Williams", "11-2-3")
 
 
 def test_parse_rounds_groups_scores_and_byes():
