@@ -110,3 +110,27 @@ def test_merge_finals_keeps_old_finals_and_drops_stale_ones():
     out = merge_finals(previous, board, now)
     assert set(out) == {"kept", "1"}  # stale "old" dropped, live game "2" not a final
     assert out["1"]["win"] == "away" and out["1"]["hs"] == out["1"]["as"] == "1"
+
+
+def test_pull_boxscores_refetches_live_and_keeps_finals(monkeypatch):
+    from d3soccer.pipelines import national
+    from d3soccer.scrapers import ncaa_national as nn
+
+    calls = []
+    monkeypatch.setattr(nn, "fetch_boxscore", lambda gid: calls.append(gid) or {"id": gid})
+    now = 50 * 86400
+    rows = [
+        {"id": "1", "status": "final", "epoch": now},  # already stored as final: skip
+        {"id": "2", "status": "live", "epoch": now},
+        {"id": "3", "status": "pre", "epoch": now},  # not started: skip
+        {"id": "4", "status": "final", "epoch": now},  # stored while live: fetch again
+    ]
+    previous = {
+        "1": {"final": True, "epoch": now, "data": {"id": "1"}},
+        "4": {"final": False, "epoch": now, "data": {}},
+        "old": {"final": True, "epoch": 1, "data": {}},
+    }
+    failures = []
+    out = national.pull_boxscores(previous, rows, now, failures)
+    assert calls == ["2", "4"] and failures == []
+    assert set(out) == {"1", "2", "4"} and out["4"]["final"] and not out["2"]["final"]

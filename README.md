@@ -50,7 +50,10 @@ the file's `starts` date, and winners advance into the next round's slots. A sco
 into the file always wins.
 
 While the site is open it re-polls the NCAA scoreboard feed every minute, so live scores
-move without a redeploy, and each score card links to the game's live stats on ncaa.com. Team names can be the NCAA's short forms
+move without a redeploy. Once a game starts, its score card opens a box score page in the
+site (`#game/<id>`): the national scrape saves each game's NCAA box score
+(`/game/<id>/boxscore`) and the build writes them to `web/boxscores/<id>.json`; for a live
+game the page also re-fetches the feed every minute. Play-by-play links out to ncaa.com. Team names can be the NCAA's short forms
 ("CWRU", "Wash. & Lee"); they link to team pages automatically. Until the file has
 games, the site's **Bracket** tab shows the announcement date and the NPI top 25.
 
