@@ -15,6 +15,9 @@ on:
       links:
         description: Also list links whose href contains this text
         required: false
+      standings:
+        description: 'Run the standings parser for these conference keys (or "all"), space-separated'
+        required: false
       dump:
         description: "CSS selectors to print the first match's HTML for, separated by ;"
         required: false
@@ -36,8 +39,9 @@ jobs:
           FAILED: ${{ inputs.failed && '--failed' || '' }}
           LINKS: ${{ inputs.links }}
           DUMP: ${{ inputs.dump }}
+          STANDINGS: ${{ inputs.standings }}
         run: |
           args=()
           IFS=';' read -ra selectors <<< "$DUMP"
           for s in "${selectors[@]}"; do s="${s#"${s%%[![:space:]]*}"}"; [ -n "$s" ] && args+=(--dump "$s"); done
-          uv run d3soccer probe $URLS $FAILED ${LINKS:+--links "$LINKS"} "${args[@]}"
+          uv run d3soccer probe $URLS $FAILED ${LINKS:+--links "$LINKS"} "${args[@]}" ${STANDINGS:+--standings $STANDINGS}

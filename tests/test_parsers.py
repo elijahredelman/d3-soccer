@@ -168,3 +168,149 @@ def test_roster_without_jersey_numbers_baldwin_wallace():
         "Sr.",
         "Decatur, Ga.",
     )
+
+
+def test_usa_south_two_wlt_columns():
+    # usasouth.net, 2026-10-29: conference and overall records are both headed "W-L-T".
+    html = standings_html(
+        [
+            (L, "School"),
+            (M, "Team"),
+            (L, "USA South"),
+            (M, "Conf. GP"),
+            (L, "Overall"),
+            (M, "PTS"),
+            (M, "W-L-T"),
+            (M, "PCT."),
+            (M, "GF-GA"),
+            (M, "Overall GP"),
+            (M, "W-L-T"),
+            (M, "PCT."),
+            (M, "GF-GA"),
+            (M, "L10"),
+            (M, "Streak"),
+        ],
+        [
+            (L, "<a>N.C. Wesleyan</a>"),
+            (M, '<img alt="N.C. Wesleyan"/><a>N.C. Wesleyan</a>'),
+            (L, "5-0-2"),
+            (M, "7"),
+            (L, "7-4-5"),
+            (M, "17"),
+            (M, "5-0-2"),
+            (M, ".857"),
+            (M, "14-5"),
+            (M, "16"),
+            (M, "7-4-5"),
+            (M, ".594"),
+            (M, "27-20"),
+            (M, "5-2-3"),
+            (M, "T1"),
+        ],
+    )
+    [row] = _parse_sidearm_standings_table(html, "USA_SOUTH")
+    assert (row.team, row.conf_record, row.overall_record, row.conf_points) == (
+        "N.C. Wesleyan",
+        "5-0-2",
+        "7-4-5",
+        ".857",
+    )
+
+
+def test_ncac_has_no_pct_column_so_it_is_computed():
+    # northcoast.org, 2026-10-29.
+    html = standings_html(
+        [
+            (L, "School"),
+            (M, "School"),
+            (L, "NCAC"),
+            (M, "Pts"),
+            (L, "Overall"),
+            (M, "Conf"),
+            (L, "Streak"),
+            (M, "Conf GF-GA"),
+            (M, "Overall"),
+            (M, "GF-GA"),
+            (M, "Streak"),
+            (M, "L10"),
+        ],
+        [
+            (L, "<a>Kenyon</a>"),
+            (M, "<a>Kenyon</a>"),
+            (L, "6-1"),
+            (M, "18"),
+            (L, "13-3"),
+            (M, "6-1"),
+            (L, "W2"),
+            (M, "25-7"),
+            (M, "13-3"),
+            (M, "48-14"),
+            (M, "W2"),
+            (M, "8-2"),
+        ],
+    )
+    [row] = _parse_sidearm_standings_table(html, "NCAC")
+    assert (row.team, row.conf_record, row.overall_record, row.conf_points) == (
+        "Kenyon",
+        "6-1",
+        "13-3",
+        ".857",
+    )
+
+
+def test_arc_markers_after_link_and_abbreviated_conf_header():
+    # rollrivers.com, 2026-10-29: "C | (1)" follows the name, the conference record is
+    # headed "A-R-C", and the plain "PCT." column is the overall one.
+    html = standings_html(
+        [
+            (L, "School"),
+            (M, "School"),
+            (L, "A-R-C"),
+            (M, "A-R-C PTS"),
+            (L, "Overall"),
+            (M, "A-R-C"),
+            (M, "A-R-C PCT."),
+            (M, "Overall"),
+            (M, "PCT."),
+            (M, "Home"),
+            (M, "Away"),
+            (M, "Neutral"),
+            (M, "Streak"),
+        ],
+        [
+            (L, "<a>Univ. of Dubuque</a> C | (1)"),
+            (
+                M,
+                '<div class="sidearm-standings-school-logo-container"><img alt="Univ. of Dubuque"/>'
+                "<a>Univ. of Dubuque</a>C | (1)</div>",
+            ),
+            (L, "6-0-1"),
+            (M, "19"),
+            (L, "10-4-3"),
+            (M, "6-0-1"),
+            (M, ".929"),
+            (M, "10-4-3"),
+            (M, ".676"),
+            (M, "6-2"),
+            (M, "4-2-3"),
+            (M, "0-0"),
+            (M, "T1"),
+        ],
+    )
+    [row] = _parse_sidearm_standings_table(html, "ARC")
+    assert (row.team, row.conf_record, row.overall_record, row.conf_points) == (
+        "Univ. of Dubuque",
+        "6-0-1",
+        "10-4-3",
+        ".929",
+    )
+
+
+def test_mac_style_overall_pct_no_longer_used_as_conference_pct():
+    # Shape of the MAC/UAA/ASC rows that stored the overall pct (Messiah 6-0-1, .882).
+    html = standings_html(
+        [(M, "School"), (M, "Conf"), (M, "Overall"), (M, "Pct.")],
+        [(M, "<a>Messiah</a>*"), (M, "6-0-1"), (M, "14-1-2"), (M, ".882")],
+    )
+    [row] = _parse_sidearm_standings_table(html, "MAC_COMMONWEALTH")
+    assert (row.team, row.conf_points) == ("Messiah", ".929")
